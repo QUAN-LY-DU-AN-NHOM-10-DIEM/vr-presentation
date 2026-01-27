@@ -66,6 +66,10 @@ Format bắt buộc:
 ```
 [JIRA-KEY] <type>(<scope>): <description>
 ```
+Để Git tự mở template này khi commit:
+
+Chạy lệnh: `git config commit.template .gitmessage.txt`
+
 Các type hợp lệ:
 - feat     : thêm tính năng mới
 - fix      : sửa bug
@@ -100,7 +104,7 @@ Mỗi Pull Request cần có:
 - Cách test (nếu có)
 
 Không merge nếu:
-- Pipeline fail
+- Pipeline fail: Trường hợp sai commit hoặc branch thì chỉnh lại theo [hướng dẫn](./docs/git/FIX_COMMIT_AND_BRANCH.md)
 - Push trực tiếp vào main hoặc develop
 
 --------------------------------------------------
