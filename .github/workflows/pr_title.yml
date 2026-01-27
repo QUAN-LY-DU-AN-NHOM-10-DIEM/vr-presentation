@@ -1,0 +1,21 @@
+name: Check PR title contains Jira key
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  check-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          echo "🔍 Checking PR title: $TITLE"
+
+          if [[ ! "$TITLE" =~ [A-Z]+-[0-9]+ ]]; then
+            echo "❌ PR title must contain a Jira key (e.g. SCRUM-36)"
+            exit 1
+          fi
+
+          echo "✅ PR title contains Jira key"

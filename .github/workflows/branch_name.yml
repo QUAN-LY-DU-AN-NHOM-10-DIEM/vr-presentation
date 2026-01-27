@@ -1,0 +1,22 @@
+name: Check Branch Name
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "Checking branch: $BRANCH_NAME"
+
+          if [[ ! "$BRANCH_NAME" =~ ([A-Z]+-[0-9]+) ]]; then
+            echo "❌ Branch name must contain a Jira key (e.g. JRA-123)"
+            echo "Example: feature/JRA-123-add-login"
+            exit 1
+          fi
+
+          echo "✅ Branch name is valid"

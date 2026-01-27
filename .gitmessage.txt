@@ -1,0 +1,15 @@
+SCRUM-KEY <type>(<scope>): <description>
+
+# type = loại thay đổi (bắt buộc)
+#   feat : thêm tính năng
+#   fix : sửa lỗi
+#   chore : việc lặt vặt, setup, config
+#   docs : tài liệu
+#   refactor : chỉnh code không đổi hành vi
+#   test : test
+#   build : build / dependency
+#   ci : CI/CD
+# scope = phạm vi ảnh hưởng (không bắt buộc)
+# ví dụ: api, ui, auth, db, repo, config
+# description = mô tả ngắn bạn làm gì
+# viết thường, không chấm cuối câu

@@ -1,0 +1,28 @@
+name: Check Commit Messages
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch commits
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit messages
+        run: |
+          COMMITS=$(git log origin/${{ github.base_ref }}..HEAD --no-merges --pretty=format:%s)
+
+          echo "$COMMITS" | while read -r COMMIT_MSG; do
+            echo "Checking commit: $COMMIT_MSG"
+            if [[ ! "$COMMIT_MSG" =~ ([A-Z]+-[0-9]+) ]]; then
+              echo "❌ Commit message must contain Jira key (e.g. JRA-123)"
+              exit 1
+            fi
+          done
+
+          echo "✅ All commit messages are valid"
