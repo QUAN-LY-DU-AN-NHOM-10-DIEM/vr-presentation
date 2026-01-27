@@ -1,4 +1,4 @@
-name: Check PR title
+name: Check PR title contains Jira key
 
 on:
   pull_request:
@@ -9,12 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate PR title
-        uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          requireScope: false
-          subjectPattern: '^\\[[A-Z]+-[0-9]+\\] .+'
-          subjectPatternError: >
-            Pull request title must start with a Jira issue key.
-            Example: [VR-12] Add audience reaction system
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          echo "🔍 Checking PR title: $TITLE"
+
+          if [[ ! "$TITLE" =~ [A-Z]+-[0-9]+ ]]; then
+            echo "❌ PR title must contain a Jira key (e.g. SCRUM-36)"
+            exit 1
+          fi
+
+          echo "✅ PR title contains Jira key"
