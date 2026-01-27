@@ -4,11 +4,12 @@
 Khi tạo Pull Request, bạn PHẢI thêm Jira Issue Key vào tiêu đề Pull Request.
 
 Định dạng bắt buộc:
-[JIRA-KEY] Mô tả ngắn gọn
+[SCRUM-KEY] Mô tả ngắn gọn
 
 Ví dụ:
 [JRA-123] Thêm chức năng đăng nhập
 [VR-12] Sửa lỗi âm thanh trong VR
+[SCRUM-36] Setup môi trường phát triển
 
 Pull Request không có Jira Key trong tiêu đề có thể bị từ chối hoặc không được merge.
 -->
@@ -38,11 +39,6 @@ Mô tả cách test (nếu cần):
 
 ## 📷 Screenshot / Video (nếu có)
 Đính kèm ảnh hoặc video minh họa thay đổi.
-
----
-
-## 🔗 Liên kết Issue (nếu có)
-- Issue #
 
 ---
 
