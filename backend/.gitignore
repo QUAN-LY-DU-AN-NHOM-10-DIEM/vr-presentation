@@ -1,0 +1,31 @@
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Environment Variables (QUAN TRỌNG: Chứa mật khẩu) ---
+.env
+.env.local
+
+# --- IDE Settings (Không bắt buộc share) ---
+.vscode/
+.idea/
+*.swp
+
+# --- Database (Nếu lỡ dùng SQLite) ---
+*.sqlite3
+*.db
+
+# --- Logs ---
+*.log
+
+# --- OS ---
+.DS_Store
+Thumbs.db
