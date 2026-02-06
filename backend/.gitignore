@@ -26,6 +26,11 @@ pip-delete-this-directory.txt
 # --- Logs ---
 *.log
 
+# --- Test generated files (File sinh ra lúc chạy test) ---
+dummy_slide.pdf
+kich_ban_test.txt
+test_results/
+
 # --- OS ---
 .DS_Store
 Thumbs.db
