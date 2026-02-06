@@ -56,3 +56,6 @@ Logs/
 UserSettings/
 .vscode/
 .idea/
+
+!*.glb
+
