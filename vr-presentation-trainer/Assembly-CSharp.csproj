@@ -1389,6 +1389,10 @@
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipelines.Universal.Config.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="WizardsCode.Animation">
+      <HintPath>Library\ScriptAssemblies\WizardsCode.Animation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Unity.RenderPipeline.Universal.ShaderLibrary">
       <HintPath>Library\ScriptAssemblies\Unity.RenderPipeline.Universal.ShaderLibrary.dll</HintPath>
       <Private>False</Private>
