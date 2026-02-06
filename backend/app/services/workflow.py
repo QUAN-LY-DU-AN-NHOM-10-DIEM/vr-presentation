@@ -12,6 +12,9 @@ async def process_presentation_upload(
     # 1. Validate (Logic nghiệp vụ)
     if not slide_file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Slide file must be PDF")
+    
+    if not script_file.filename.endswith('.txt'):
+        raise HTTPException(status_code=400, detail="Script file must be TXT")
 
     # 2. Extract Data
     slide_text = await extract_pdf(slide_file)
