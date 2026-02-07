@@ -21,6 +21,8 @@ class SessionModel(Base):
     session_id = Column(String, primary_key=True, index=True)
     title = Column(Text, nullable=True)
     context_text = Column(Text, nullable=True)
+    slide_path = Column(String, nullable=True)  
+    script_path = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 def init_db():

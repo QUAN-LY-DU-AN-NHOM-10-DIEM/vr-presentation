@@ -52,16 +52,20 @@ pip install -r requirements.txt
 Tạo file .env tại thư mục gốc (copy từ .env.example nếu có) và điền thông tin của bạn:
 Ini, TOML
 ```
-# Database Config
+# --- CẤU HÌNH DATABASE (POSTGRESQL) ---
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
-DB_PASS=your_password_here  <-- Sửa mật khẩu Postgres của bạn
+# Thay password dưới đây bằng password lúc bạn cài Postgres
+DB_PASS=postgres 
 DB_NAME=presentation_db
 
-# AI Config
+# --- CẤU HÌNH OLLAMA AI ---
 OLLAMA_URL=http://localhost:11434/api/generate
-MODEL_NAME=llama3
+MODEL_NAME=qwen2.5:7b
+
+# --- CẤU HÌNH THƯ MỤC LƯU TRỮ FILE UPLOAD ---
+UPLOAD_DIR=uploads
 ```
 ### 5. Chạy Server
 

@@ -30,6 +30,7 @@ pip-delete-this-directory.txt
 dummy_slide.pdf
 kich_ban_test.txt
 test_results/
+uploads/
 
 # --- OS ---
 .DS_Store
