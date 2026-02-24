@@ -184,7 +184,7 @@
       }
     },
     "com.unity.visualscripting": {
-      "version": "1.9.9",
+      "version": "1.9.10",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -199,19 +199,6 @@
       "source": "registry",
       "dependencies": {
         "com.unity.modules.xr": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.xr.hands": {
-      "version": "1.7.3",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.modules.xr": "1.0.0",
-        "com.unity.inputsystem": "1.3.0",
-        "com.unity.mathematics": "1.2.6",
-        "com.unity.xr.core-utils": "2.2.0",
-        "com.unity.xr.management": "4.0.1"
       },
       "url": "https://packages.unity.com"
     },
@@ -265,13 +252,6 @@
         "com.unity.xr.legacyinputhelpers": "2.1.2"
       },
       "url": "https://packages.unity.com"
-    },
-    "wizardscode.animation": {
-      "version": "https://github.com/TheWizardsCode/Animation.git#release/stable",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "2450fa5926b0e672dc6662bc62af05fa8f4e4fe2"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
