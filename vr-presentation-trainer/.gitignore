@@ -21,3 +21,4 @@ Assets/GeneratedLocalRepo
 UserSettings/*
 Packages/com.*.*/
 .vscode/*
+.vsconfig
