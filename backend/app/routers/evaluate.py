@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import EvaluateSpeechRequest, EvaluateSpeechResponse, SessionDetailResponse
-from app.services.workflow import process_speech_evaluation
+from app.schemas import EvaluateSpeechRequest, EvaluateSpeechResponse, GenerateQuestionResponse, SessionDetailResponse
+from app.services.workflow import process_generate_questions, process_speech_evaluation
 from app.crud import delete_session_record, get_all_session_with_evaluation, get_session_with_evaluation
 
 router = APIRouter()
@@ -50,3 +50,14 @@ def get_all_sessions_endpoint(db: Session = Depends(get_db)):
     """
     sessions = get_all_session_with_evaluation(db)
     return sessions
+
+@router.post("/generate-question", response_model=GenerateQuestionResponse)
+async def generate_question_endpoint(
+    request: EvaluateSpeechRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    API Sinh câu hỏi phản biện.
+    Đóng vai giám khảo/khán giả đặt câu hỏi dựa trên Context gốc và đoạn vừa trình bày.
+    """
+    return await process_generate_questions(db, request)

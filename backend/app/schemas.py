@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
@@ -55,3 +55,6 @@ class SessionDetailResponse(BaseModel):
     evaluation: Optional[EvaluationDetail] = None 
     
     model_config = ConfigDict(from_attributes=True)
+    
+class GenerateQuestionResponse(BaseModel):
+    questions: List[str]

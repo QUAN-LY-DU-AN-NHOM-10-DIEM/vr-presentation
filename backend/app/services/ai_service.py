@@ -115,6 +115,11 @@ def clean_json_string(raw_str: str) -> str:
     match = re.search(r'\{.*\}', raw_str, re.DOTALL)
     return match.group(0) if match else "{}"
 
+def clean_json_array_string(raw_str: str) -> str:
+    """Lọc sạch các ký tự để chỉ lấy đúng mảng JSON [...]"""
+    match = re.search(r'\[.*\]', raw_str, re.DOTALL)
+    return match.group(0) if match else "[]"
+
 async def evaluate_speech_with_ai(context: str, user_speech: str, mode: str):
 # 1. Định nghĩa Luật chấm điểm (Rubric) và Giọng điệu (Tone) riêng biệt
     if mode == "exam":
@@ -193,3 +198,64 @@ async def evaluate_speech_with_ai(context: str, user_speech: str, mode: str):
     except Exception as e:
         print(f"❌ Lỗi gọi AI ({PROVIDER}): {e}")
         return None
+    
+async def generate_questions_with_ai(context: str, user_speech: str, mode: str) -> list:
+    # 1. Setup Nhân cách (Persona) và Xưng hô
+    if mode == "exam":
+        persona = """
+        ĐÓNG VAI: Bạn là HỘI ĐỒNG GIÁM KHẢO KHÓ TÍNH đang ngồi trực tiếp đối diện người thuyết trình.
+        THÁI ĐỘ: Đặt câu hỏi chất vấn sắc bén, phản biện, vạch lá tìm sâu, yêu cầu làm rõ số liệu/dẫn chứng. Giọng văn đanh thép, nghi ngờ.
+        XƯNG HÔ: Trực tiếp gọi người đối diện là "bạn" hoặc "em". (Ví dụ: "Cơ sở nào để em khẳng định...", "Tại sao bạn lại cho rằng...")
+        """
+    else:
+        persona = """
+        ĐÓNG VAI: Bạn là MENTOR THÂN THIỆN đang ngồi dưới ghế khán giả nghe thuyết trình.
+        THÁI ĐỘ: Đặt câu hỏi mở, gợi ý để giúp người nói khai triển thêm ý tưởng, giải thích sâu hơn. Giọng văn tò mò, khích lệ.
+        XƯNG HÔ: Trực tiếp gọi người đối diện là "bạn". (Ví dụ: "Mình thấy ý này rất thú vị, bạn có thể chia sẻ thêm...", "Theo bạn thì...")
+        """
+
+    # 2. Xây dựng Prompt
+    prompt = f"""
+    {persona}
+    
+    TÀI LIỆU GỐC CỦA BÀI THUYẾT TRÌNH:
+    {context}
+    
+    NGƯỜI TRÌNH BÀY VỪA NÓI ĐOẠN SAU:
+    "{user_speech}"
+    
+    NHIỆM VỤ:
+    Dựa vào tài liệu gốc và nội dung người trình bày vừa nói, hãy ĐẶT TRỰC TIẾP 10 CÂU HỎI cho họ.
+    
+    QUY TẮC BẮT BUỘC (TUÂN THỦ NGHIÊM NGẶT):
+    1. HỎI TRỰC TIẾP: Nói thẳng với người trình bày, tuyệt đối không dùng từ "thí sinh" hay "người trình bày" trong câu hỏi.
+    2. NGẮN GỌN: Dưới 30 từ mỗi câu (để hệ thống Text-to-Speech đọc lên tự nhiên nhất).
+    3. HỎI SÂU: Tránh câu hỏi Có/Không. Yêu cầu giải thích, phân tích hoặc bảo vệ quan điểm.
+    4. BÁM SÁT THỰC TẾ: Câu hỏi phải liên quan chặt chẽ đến đoạn text họ vừa nói.
+    
+    YÊU CẦU OUTPUT:
+    Chỉ trả về 1 mảng JSON thuần túy chứa 10 chuỗi string (KHÔNG bọc markdown, KHÔNG viết lời dẫn).
+    
+    Ví dụ định dạng mong muốn:
+    [
+        "Bạn lấy số liệu ở đâu để chứng minh cho luận điểm vừa rồi?",
+        "Ý tưởng này rất hay, nhưng bạn sẽ giải quyết rủi ro về chi phí như thế nào?",
+        "Tại sao bạn lại chọn phương pháp này thay vì các giải pháp truyền thống khác?"
+    ]
+    """
+
+    try:
+        # Gọi hàm _call_llm đã cấu hình sẵn của Trân
+        raw_text = await _call_llm(prompt) 
+        
+        clean_json = clean_json_array_string(raw_text)
+        questions = json.loads(clean_json)
+        
+        # Đảm bảo nó là list, nếu không thì ném lỗi xuống except
+        if isinstance(questions, list):
+            return questions
+        return []
+        
+    except Exception as e:
+        print(f"❌ Lỗi AI sinh câu hỏi: {e}")
+        return []

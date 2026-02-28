@@ -2,10 +2,10 @@ import uuid
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from app.services.file_processor import extract_pdf, read_txt
-from app.services.ai_service import clean_and_summarize, evaluate_speech_with_ai
+from app.services.ai_service import clean_and_summarize, evaluate_speech_with_ai, generate_questions_with_ai
 from app.crud import create_evaluation_record, create_topic, get_topic_by_id
 from app.services.storage_service import save_upload_file
-from app.schemas import CriteriaScores, EvaluateSpeechRequest, EvaluateSpeechResponse
+from app.schemas import CriteriaScores, EvaluateSpeechRequest, EvaluateSpeechResponse, GenerateQuestionResponse
 
 async def process_presentation_upload(
     db: Session, 
@@ -96,3 +96,38 @@ async def process_speech_evaluation(
         criteria_scores=CriteriaScores(**ai_result.get("criteria_scores", {})),
         feedback=ai_result.get("feedback", "")
     )
+    
+async def process_generate_questions(db: Session, request: EvaluateSpeechRequest) -> GenerateQuestionResponse:
+    # 1. Lấy context gốc
+    topic = get_topic_by_id(db, request.topic_id)
+    if not topic or not topic.context_text:
+        raise HTTPException(status_code=404, detail="Không tìm thấy chủ đề tài liệu.")
+
+    # 2. Xử lý input rỗng
+    speech = request.user_speech.strip()
+    if len(speech.split()) < 5:
+        speech = "Thí sinh trình bày rất ngắn, chưa rõ ràng ý chính."
+
+    # 3. Gọi AI
+    ai_questions = await generate_questions_with_ai(topic.context_text, speech, request.mode)
+
+    # 4. FALLBACK LOGIC (Bảo kê hệ thống)
+    fallback_questions = [
+        "Bạn có thể tóm tắt lại ý quan trọng nhất vừa trình bày không?",
+        "Phần trình bày này mang lại giá trị thực tiễn gì?",
+        "Xin hãy đưa ra một ví dụ cụ thể hơn cho luận điểm của bạn.",
+        "Bạn gặp khó khăn lớn nhất là gì khi nghiên cứu phần này?",
+        "Cơ sở nào để bạn đưa ra kết luận như vậy?"
+    ]
+
+    # Nếu AI lỗi hoặc trả về quá ít câu hỏi, đắp fallback vào cho đủ 10 câu
+    final_questions = ai_questions.copy()
+    if len(final_questions) < 10:
+        needed = 10 - len(final_questions)
+        # Bơm câu hỏi dự phòng vào
+        final_questions.extend(fallback_questions[:needed])
+        
+    # Đảm bảo chỉ trả về tối đa 10 câu (cắt bớt nếu AI bị lố)
+    final_questions = final_questions[:10]
+
+    return GenerateQuestionResponse(questions=final_questions)
