@@ -1,5 +1,5 @@
 import os
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database import EvaluationModel, SessionModel, TopicModel
 import uuid
 
@@ -88,3 +88,36 @@ def create_evaluation_record(db: Session, topic_id: str, mode: str, user_speech:
     db.commit()
     
     return session_id
+
+def get_session_with_evaluation(db: Session, session_id: str):
+    """
+    Lấy thông tin Session kèm theo Evaluation của nó.
+    Dùng joinedload để tối ưu truy vấn (JOIN 2 bảng).
+    """
+    return db.query(SessionModel)\
+             .options(joinedload(SessionModel.evaluation))\
+             .filter(SessionModel.session_id == session_id)\
+             .first()
+             
+def get_all_session_with_evaluation(db: Session):
+    """
+    Lấy thông tin Session kèm theo Evaluation của nó.
+    Dùng joinedload để tối ưu truy vấn (JOIN 2 bảng).
+    """
+    return db.query(SessionModel)\
+             .options(joinedload(SessionModel.evaluation))\
+             .all()
+
+def delete_session_record(db: Session, session_id: str):
+    """
+    Xóa Session. 
+    Nhờ cấu hình cascade="all, delete-orphan" ở Database,
+    Evaluation tương ứng cũng sẽ tự động bị xóa theo.
+    """
+    session_to_delete = db.query(SessionModel).filter(SessionModel.session_id == session_id).first()
+    
+    if session_to_delete:
+        db.delete(session_to_delete)
+        db.commit()
+        return True
+    return False

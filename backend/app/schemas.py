@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 class TopicResponse(BaseModel):
@@ -33,3 +33,25 @@ class EvaluateSpeechResponse(BaseModel):
     overall_score: int
     criteria_scores: CriteriaScores
     feedback: str
+    
+class EvaluationDetail(BaseModel):
+    accuracy_score: int
+    fluency_score: int
+    repetition_score: int
+    structure_score: int
+    overall_score: int
+    feedback: Optional[str] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class SessionDetailResponse(BaseModel):
+    session_id: str
+    topic_id: str
+    mode: str
+    user_speech: str
+    created_at: Optional[datetime] = None
+    
+    # Kéo luôn cái bảng điểm đính kèm vào đây
+    evaluation: Optional[EvaluationDetail] = None 
+    
+    model_config = ConfigDict(from_attributes=True)
