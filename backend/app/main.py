@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.database import init_db
-from app.routers import topics
+from app.routers import topics, evaluate
 
 app = FastAPI(title="VR Presentation Trainer API")
 
@@ -10,6 +10,7 @@ def on_startup():
 
 # Đăng ký router
 app.include_router(topics.router, prefix="/api/v1", tags=["Context Upload"])
+app.include_router(evaluate.router, prefix="/api/v1", tags=["Evaluate Speech"])
 
 # Root check
 @app.get("/")

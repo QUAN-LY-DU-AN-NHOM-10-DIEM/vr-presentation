@@ -2,9 +2,10 @@ import uuid
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from app.services.file_processor import extract_pdf, read_txt
-from app.services.ai_service import clean_and_summarize
-from app.crud import create_topic
+from app.services.ai_service import clean_and_summarize, evaluate_speech_with_ai
+from app.crud import create_evaluation_record, create_topic, get_topic_by_id
 from app.services.storage_service import save_upload_file
+from app.schemas import CriteriaScores, EvaluateSpeechRequest, EvaluateSpeechResponse
 
 async def process_presentation_upload(
     db: Session, 
@@ -50,3 +51,48 @@ async def process_presentation_upload(
         script_path=saved_script_path, topic_id=topic_id)
     
     return new_session
+
+async def process_speech_evaluation(
+    request: EvaluateSpeechRequest,
+    db: Session
+):
+    """
+    Xử lý toàn bộ logic chấm điểm bài nói của user.
+    """
+    # 1. Lấy context gốc từ bảng topics
+    topic = get_topic_by_id(db, request.topic_id)
+    if not topic or not topic.context_text:
+        raise HTTPException(status_code=404, detail="Không tìm thấy chủ đề này.")
+
+    # 2. Xử lý trường hợp nói quá ngắn (chống spam AI)
+    if len(request.user_speech.split()) < 5:
+        # Khởi tạo object Pydantic đúng chuẩn để không bị lỗi schema
+        return EvaluateSpeechResponse(
+            session_id="none",
+            overall_score=1,
+            criteria_scores=CriteriaScores(accuracy=1, fluency=1, repetition=1, structure=1),
+            feedback="Bài nói quá ngắn, hãy trình bày rõ ràng hơn."
+        )
+
+    # 3. Gọi AI chấm điểm
+    ai_result = await evaluate_speech_with_ai(topic.context_text, request.user_speech, request.mode)
+    
+    if not ai_result:
+        raise HTTPException(status_code=500, detail="Lỗi khi chấm điểm. AI không phản hồi.")
+
+    # 4. Lưu vào Database (sessions + evaluations)
+    session_id = create_evaluation_record(
+        db=db,
+        topic_id=request.topic_id,
+        mode=request.mode,
+        user_speech=request.user_speech,
+        ai_result=ai_result
+    )
+
+    # 5. Định dạng dữ liệu trả về cho Frontend
+    return EvaluateSpeechResponse(
+        session_id=session_id,
+        overall_score=ai_result.get("overall_score", 0),
+        criteria_scores=CriteriaScores(**ai_result.get("criteria_scores", {})),
+        feedback=ai_result.get("feedback", "")
+    )
