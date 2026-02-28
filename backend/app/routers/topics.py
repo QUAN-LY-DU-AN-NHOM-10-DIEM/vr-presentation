@@ -21,9 +21,9 @@ async def upload_context_endpoint(
 
 # API Xóa
 @router.delete("/topics/{topic_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_session_endpoint(topic_id: str, db: Session = Depends(get_db)):
+def delete_topic_endpoint(topic_id: str, db: Session = Depends(get_db)):
     """Xóa một bài theo ID"""
-    is_deleted = crud.delete_session(db, topic_id)
+    is_deleted = crud.delete_topic(db, topic_id)
     
     if not is_deleted:
         raise HTTPException(
@@ -38,4 +38,4 @@ def delete_session_endpoint(topic_id: str, db: Session = Depends(get_db)):
 @router.get("/topics", response_model=List[TopicResponse])
 def get_all_sessions_endpoint(db: Session = Depends(get_db)):
     """Trả về danh sách tất cả các bài đã tóm tắt"""
-    return crud.get_all_sessions(db)
+    return crud.get_all_topics(db)
