@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import httpx
@@ -5,7 +6,7 @@ from dotenv import load_dotenv
 
 # Import các SDK
 from openai import AsyncOpenAI, AsyncAzureOpenAI
-import google.generativeai as genai
+import google.genai as genai
 
 load_dotenv()
 
@@ -109,3 +110,86 @@ async def clean_and_summarize(full_text: str) -> str:
         print(f"❌ AI Service Error ({PROVIDER}): {e}")
         # Lưu ý: Sửa lại return 1 biến string để tránh lỗi unpack tuple nếu bạn gọi hàm này ở nơi khác
         return "Error: Không thể tóm tắt nội dung lúc này."
+    
+def clean_json_string(raw_str: str) -> str:
+    match = re.search(r'\{.*\}', raw_str, re.DOTALL)
+    return match.group(0) if match else "{}"
+
+async def evaluate_speech_with_ai(context: str, user_speech: str, mode: str):
+# 1. Định nghĩa Luật chấm điểm (Rubric) và Giọng điệu (Tone) riêng biệt
+    if mode == "exam":
+        mode_rules = """
+        CHẾ ĐỘ: EXAM (THI THỬ) - ĐÁNH GIÁ CỰC KỲ KHẮT KHE, CHUẨN CHUYÊN NGHIỆP.
+        
+        [HƯỚNG DẪN CHẤM ĐIỂM]
+        - accuracy (Độ chính xác): Yêu cầu tuyệt đối. Phải bao phủ 100% ý chính. Thiếu ý hoặc nói sai kiến thức -> Trừ thẳng tay xuống dưới 5 điểm.
+        - fluency (Trôi chảy): Giọng điệu phải ngắt nghỉ chuẩn xác. Vấp váp nhẹ -> Trừ 2 điểm.
+        - repetition (Lặp từ): KHÔNG KHOAN NHƯỢNG. Có xuất hiện "ờ", "à", "thì", "mà", "kiểu như" -> Chấm dưới 8 điểm ngay lập tức.
+        - structure (Cấu trúc): Phải có mở bài, chuyển ý, và kết luận rõ ràng. Không có -> Dưới 7 điểm.
+        
+        [HƯỚNG DẪN NHẬN XÉT]
+        - Giọng văn: Nghiêm khắc, trực diện, chuyên nghiệp như một giám khảo khó tính.
+        - Nội dung: Nêu rõ lỗi sai kiến thức (nếu có). Chỉ ra 3 điểm mạnh, 3 điểm yếu, và cách khắc phục để đạt chuẩn báo cáo doanh nghiệp.
+        """
+    else:
+        mode_rules = """
+        CHẾ ĐỘ: PRACTICE (TỰ LUYỆN) - ĐÁNH GIÁ NHẸ NHÀNG, MANG TÍNH KHÍCH LỆ.
+        
+        [HƯỚNG DẪN CHẤM ĐIỂM]
+        - accuracy (Độ chính xác): Thí sinh chỉ cần nắm được 60-70% ý chính hoặc từ khóa là có thể cho 7-8 điểm. Bỏ qua các lỗi sai nhỏ.
+        - fluency (Trôi chảy): Khuyến khích sự tự tin. Dù có vấp váp nhưng vẫn nói hết câu -> Vẫn cho điểm khá (7-8 điểm).
+        - repetition (Lặp từ): Chấp nhận các từ thừa (ờ, à) ở mức độ vừa phải. Chỉ trừ điểm nhẹ nếu lặp từ quá nhiều gây khó hiểu.
+        - structure (Cấu trúc): Có ý thức trình bày tuần tự là đạt yêu cầu.
+        
+        [HƯỚNG DẪN NHẬN XÉT]
+        - Giọng văn: Ấm áp, khích lệ, động viên (Dùng phương pháp Khen ngợi -> Góp ý -> Động viên).
+        - Nội dung: Tìm ra 3 điểm mạnh để khen, 3 điểm cần cải thiện nhẹ nhàng, và gợi ý mẹo nhỏ để lần sau làm tốt hơn.
+        """
+
+    # 2. Ráp vào Prompt tổng
+    prompt = f"""
+    Bạn là Giám khảo AI chấm thi thuyết trình. Bạn sẽ so sánh "Bài nói của thí sinh" với "Tài liệu gốc" để cho điểm.
+    
+    {mode_rules}
+    
+    TÀI LIỆU GỐC (ĐÁP ÁN CHUẨN):
+    {context}
+    
+    BÀI NÓI CỦA THÍ SINH:
+    "{user_speech}"
+    
+    YÊU CẦU OUTPUT:
+    Chỉ trả về 1 chuỗi JSON hợp lệ, KHÔNG bọc trong markdown (không dùng ```json), KHÔNG viết thêm lời giải thích.
+    
+    CẤU TRÚC JSON BẮT BUỘC:
+    {{
+        "overall_score": [Điểm tổng, thang 1-10],
+        "criteria_scores": {{
+            "accuracy": [Điểm chính xác, thang 1-10],
+            "fluency": [Điểm lưu loát, thang 1-10],
+            "repetition": [Điểm lặp từ, thang 1-10],
+            "structure": [Điểm cấu trúc, thang 1-10]
+        }},
+        "feedback": "Phần nhận xét chi tiết (Gồm: Điểm mạnh, Điểm yếu, Gợi ý cải thiện - viết gộp chung trong 1 chuỗi này, dùng \\n để xuống dòng nếu cần)."
+    }}
+    """
+
+    try:
+        # 1. Gọi hàm _call_llm chung thay vì httpx (Nó sẽ tự chọn Provider theo .env)
+        raw_text = await _call_llm(prompt)
+        
+        # 2. Dùng hàm Regex của Trân để cắt đúng phần JSON (bỏ mấy câu như "Here is your JSON...")
+        clean_json = clean_json_string(raw_text)
+        
+        # 3. Parse thành Dictionary của Python
+        parsed_data = json.loads(clean_json)
+        return parsed_data
+        
+    except json.JSONDecodeError as e:
+        print(f"❌ Lỗi Parse JSON do AI trả về sai định dạng: {e}")
+        # In raw_text ra để xem AI nó lỡ nói bậy cái gì
+        print(f"Raw Text: {raw_text}") 
+        return None
+    except Exception as e:
+        print(f"❌ Lỗi gọi AI ({PROVIDER}): {e}")
+        return None
