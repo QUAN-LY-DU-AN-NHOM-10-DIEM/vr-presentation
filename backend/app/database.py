@@ -16,10 +16,11 @@ engine = create_engine(DB_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-class SessionModel(Base):
-    __tablename__ = "sessions"
-    session_id = Column(String, primary_key=True, index=True)
+class TopicModel(Base):
+    __tablename__ = "topics"
+    topic_id = Column(String, primary_key=True, index=True)
     title = Column(Text, nullable=True)
+    description = Column(Text, nullable=True)
     context_text = Column(Text, nullable=True)
     slide_path = Column(String, nullable=True)  
     script_path = Column(String, nullable=True)

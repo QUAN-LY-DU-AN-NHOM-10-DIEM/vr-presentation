@@ -7,3 +7,5 @@ httpx
 sqlalchemy     
 psycopg2-binary 
 sqlalchemy-utils
+openai 
+google-generativeai 

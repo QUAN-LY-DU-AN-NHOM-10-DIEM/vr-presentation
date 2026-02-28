@@ -49,24 +49,7 @@ pip install -r requirements.txt
 
 ### 4. Cấu hình Database & Môi trường
 
-Tạo file .env tại thư mục gốc (copy từ .env.example nếu có) và điền thông tin của bạn:
-Ini, TOML
-```
-# --- CẤU HÌNH DATABASE (POSTGRESQL) ---
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-# Thay password dưới đây bằng password lúc bạn cài Postgres
-DB_PASS=postgres 
-DB_NAME=presentation_db
-
-# --- CẤU HÌNH OLLAMA AI ---
-OLLAMA_URL=http://localhost:11434/api/generate
-MODEL_NAME=qwen2.5:7b
-
-# --- CẤU HÌNH THƯ MỤC LƯU TRỮ FILE UPLOAD ---
-UPLOAD_DIR=uploads
-```
+Tạo file .env tại thư mục gốc (copy từ .env.example) và điền thông tin của bạn.
 ### 5. Chạy Server
 
 Sử dụng Uvicorn để start server ở chế độ reload (tự động cập nhật khi sửa code):
@@ -89,6 +72,7 @@ python test_api.py
 ```
 
 Script sẽ tự động:
+
     - Tạo 1 file PDF giả và 1 file Script giả.
     - Gửi lên API.
     - In ra kết quả tóm tắt từ AI.
@@ -102,9 +86,9 @@ app/
 ├── schemas.py           # Định dạng dữ liệu (Pydantic)
 ├── crud.py              # Thao tác Database (Create/Read/Delete)
 ├── routers/             # API Endpoints (Controller)
-│   └── upload.py        
+│   └── topics.py        
 └── services/            # Xử lý Logic nghiệp vụ
-    ├── ai_service.py    # Giao tiếp với Ollama
+    ├── ai_service.py    # Giao tiếp với AI
     ├── file_processor.py# Đọc PDF/TXT
     └── workflow.py      # Điều phối luồng xử lý chính
 

@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 from datetime import datetime
 
-class SessionResponse(BaseModel):
-    session_id: str
+class TopicResponse(BaseModel):
+    topic_id: str
     title: str
+    description: str
     context_text: str
     slide_path: str
     script_path: str = None

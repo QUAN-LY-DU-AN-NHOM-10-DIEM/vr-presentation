@@ -3,15 +3,17 @@ from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from app.services.file_processor import extract_pdf, read_txt
 from app.services.ai_service import clean_and_summarize
-from app.crud import create_session
+from app.crud import create_topic
 from app.services.storage_service import save_upload_file
 
 async def process_presentation_upload(
     db: Session, 
+    title: str,
+    description: str,
     slide_file: UploadFile, 
     script_file: UploadFile | None
 ):
-    session_id = str(uuid.uuid4())
+    topic_id = str(uuid.uuid4())
     
     # Validate (Logic nghiệp vụ)
     if not slide_file.filename.endswith('.pdf'):
@@ -31,23 +33,20 @@ async def process_presentation_upload(
     if not slide_text and not script_text:
         raise HTTPException(status_code=400, detail="No content extracted")
     
-    saved_slide_path = await save_upload_file(slide_file, session_id, "pdf")
+    saved_slide_path = await save_upload_file(slide_file, topic_id, "pdf")
     
     saved_script_path = None
     if script_file:
-        saved_script_path = await save_upload_file(script_file, session_id, "txt")
+        saved_script_path = await save_upload_file(script_file, topic_id, "txt")
 
     # Merge Logic
-    full_text = f"---SLIDE---\n{slide_text}\n---SCRIPT---\n{script_text}"
+    full_text = f"---TITLE---{title}\n---DESCRIPTION---\n{description}---SLIDE---\n{slide_text}\n---SCRIPT---\n{script_text}"
 
     # AI Processing
-    topic, summary = await clean_and_summarize(full_text)
+    summary = await clean_and_summarize(full_text)
     
-    if topic == "Error":
-        raise HTTPException(status_code=500, detail="AI service failed to summarize content")
-
     # Persist Data (Gọi CRUD)
-    new_session = create_session(db, title=topic, context=summary, slide_path=saved_slide_path,
-        script_path=saved_script_path, session_id=session_id)
+    new_session = create_topic(db, title=title, description=description, context=summary, slide_path=saved_slide_path,
+        script_path=saved_script_path, topic_id=topic_id)
     
     return new_session

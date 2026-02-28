@@ -9,13 +9,13 @@ UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 # Tạo thư mục uploads nếu chưa có
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-async def save_upload_file(file: UploadFile, session_id: str, extension: str) -> str:
+async def save_upload_file(file: UploadFile, topic_id: str, extension: str) -> str:
     """
-    Lưu file upload vào đĩa với tên là session_id.
+    Lưu file upload vào đĩa với tên là topic_id.
     Ví dụ: uploads/123-abc.pdf
     Trả về: Đường dẫn file (str)
     """
-    filename = f"{session_id}.{extension}"
+    filename = f"{topic_id}.{extension}"
     file_path = os.path.join(UPLOAD_DIR, filename)
     
     # Lưu nội dung file xuống đĩa
