@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.muratoreware.unitypdfviewer": {
+      "version": "https://github.com/kdpkke/UnityPDFViewer.git?path=etc/UnityPackage",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "bb452293650cc4c41f2ff8e39b22857e30f67a81"
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.11",
       "depth": 0,
@@ -20,7 +27,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.cloud.gltfast": {
-      "version": "6.16.0",
+      "version": "6.16.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -33,7 +40,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.collab-proxy": {
-      "version": "2.11.3",
+      "version": "2.11.4",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
@@ -176,7 +183,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.timeline": {
-      "version": "1.8.10",
+      "version": "1.8.11",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -197,7 +204,7 @@
       }
     },
     "com.unity.visualscripting": {
-      "version": "1.9.10",
+      "version": "1.9.11",
       "depth": 0,
       "source": "registry",
       "dependencies": {
