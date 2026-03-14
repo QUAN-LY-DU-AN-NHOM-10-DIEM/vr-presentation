@@ -1,13 +1,18 @@
+using Assets.CustomPdfViewer.Scripts;
 using NativeFilePickerNamespace;
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Networking;
-using Assets.CustomPdfViewer.Scripts;
 
 public class GameModeManager : MonoBehaviour
 {
-    public GameObject gameMenu; public Renderer screenRenderer; public CustomPdfViewerUI pdfViewer;
+    public GameObject gameMenu; 
+    public Renderer screenRenderer; 
+    public CustomPdfViewerUI pdfViewer; 
+    public InputActionReference nextSlideInput;
+    public InputActionReference previousSlideInput;
     public void OpenFilePicker()
     {
         // Change the filter to only accept PDFs
@@ -35,7 +40,6 @@ public class GameModeManager : MonoBehaviour
             pdfViewer.NextPage();
         }
     }
-
     public void PreviousSlide()
     {
         if (pdfViewer != null)
@@ -43,9 +47,9 @@ public class GameModeManager : MonoBehaviour
             pdfViewer.PreviousPage();
         }
     }
+    
     public void StartExam()
     {
-        pdfViewer.LoadPDF("document.pdf");
         Debug.Log("Exam Mode Activated!"); HideMenu();
     }
     public void StartPractice()
@@ -59,5 +63,33 @@ public class GameModeManager : MonoBehaviour
         {
             gameMenu.SetActive(false);
         }
+    }
+    private void OnNextSlidePressed(InputAction.CallbackContext context)
+    {
+        NextSlide(); // Calls your existing method!
+    }
+
+    private void OnPreviousSlidePressed(InputAction.CallbackContext context)
+    {
+        PreviousSlide(); // Calls your existing method!
+    }
+    private void OnEnable()
+    {
+        // When the object turns on, start listening to the controllers
+        if (nextSlideInput != null)
+            nextSlideInput.action.performed += OnNextSlidePressed;
+
+        if (previousSlideInput != null)
+            previousSlideInput.action.performed += OnPreviousSlidePressed;
+    }
+
+    private void OnDisable()
+    {
+        // When the object turns off, stop listening (prevents crashes)
+        if (nextSlideInput != null)
+            nextSlideInput.action.performed -= OnNextSlidePressed;
+
+        if (previousSlideInput != null)
+            previousSlideInput.action.performed -= OnPreviousSlidePressed;
     }
 }
