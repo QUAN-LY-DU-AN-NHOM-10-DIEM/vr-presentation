@@ -3907,6 +3907,20 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9c3f2745581574d548db8f1fc61b9797, type: 3}
+--- !u!114 &299895174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
+  m_Name: XRI Left Interaction/Activate
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
+  m_Asset: {fileID: -944628639613478452, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  m_ActionId: 0c0991c5-d329-4afc-8892-1076b440477c
 --- !u!1 &305328123
 GameObject:
   m_ObjectHideFlags: 0
@@ -4327,20 +4341,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 347789203}
   m_Mesh: {fileID: -1464154359954416871, guid: 30d38c803ef17bb499c131d5269fe9d8, type: 3}
---- !u!114 &349535448
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
-  m_Name: XRI Right Interaction/Activate
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
-  m_Asset: {fileID: -944628639613478452, guid: c348712bda248c246b8c49b3db54643f, type: 3}
-  m_ActionId: 41976d89-60de-4deb-bff9-16b4af96b290
 --- !u!4 &357099630 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9181772119567652583, guid: 773a434cc7f5944f797566ab7465402d, type: 3}
@@ -9702,20 +9702,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 875404181}
   m_CullTransparentMesh: 1
---- !u!114 &884509073
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
-  m_Name: XRI Left Interaction/Activate
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
-  m_Asset: {fileID: -944628639613478452, guid: c348712bda248c246b8c49b3db54643f, type: 3}
-  m_ActionId: 0c0991c5-d329-4afc-8892-1076b440477c
 --- !u!1001 &886121646
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10767,7 +10753,7 @@ PrefabInstance:
     - target: {fileID: 6144152014774755164, guid: 4b4404be27a3bb34da02212bce258e66, type: 3}
       propertyPath: nextSlideInput
       value: 
-      objectReference: {fileID: 884509073}
+      objectReference: {fileID: 1082759252}
     - target: {fileID: 6144152014774755164, guid: 4b4404be27a3bb34da02212bce258e66, type: 3}
       propertyPath: titleInputField
       value: 
@@ -10779,7 +10765,7 @@ PrefabInstance:
     - target: {fileID: 6144152014774755164, guid: 4b4404be27a3bb34da02212bce258e66, type: 3}
       propertyPath: previousSlideInput
       value: 
-      objectReference: {fileID: 349535448}
+      objectReference: {fileID: 299895174}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -11926,6 +11912,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
   m_Asset: {fileID: -944628639613478452, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   m_ActionId: 01c7fda4-9c15-4167-8b87-58024f21d903
+--- !u!114 &1082759252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
+  m_Name: XRI Right Interaction/Activate
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
+  m_Asset: {fileID: -944628639613478452, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  m_ActionId: 41976d89-60de-4deb-bff9-16b4af96b290
 --- !u!114 &1093456173
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15614,6 +15614,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7968120448156587179, guid: 680df940a2e1ef04d93123533479fad1, type: 3}
+      propertyPath: pdfImage
+      value: 
+      objectReference: {fileID: 1523863618}
+    - target: {fileID: 7968120448156587179, guid: 680df940a2e1ef04d93123533479fad1, type: 3}
       propertyPath: isInMainRoom
       value: 0
       objectReference: {fileID: 0}
@@ -15669,6 +15673,17 @@ Transform:
   - {fileID: 990841660}
   m_Father: {fileID: 546941257}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1523863618 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4713243748673254802, guid: 46456dae3dda32145b287bfd5c839eb4, type: 3}
+  m_PrefabInstance: {fileID: 502486462}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
 --- !u!1 &1526424662
 GameObject:
   m_ObjectHideFlags: 0
@@ -21219,7 +21234,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5294826466912831250, guid: aaa1f3621b2d7d445943428a9e13e868, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -56
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 5375932560182290457, guid: aaa1f3621b2d7d445943428a9e13e868, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
