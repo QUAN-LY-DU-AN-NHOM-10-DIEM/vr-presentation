@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 # Import các SDK
 from openai import AsyncOpenAI, AsyncAzureOpenAI
-import google.genai as genai
+from google import genai
 
 load_dotenv()
 
@@ -52,10 +52,14 @@ async def _call_llm(prompt: str) -> str:
         return response.choices[0].message.content
 
     elif PROVIDER == "gemini":
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        # Chạy đồng bộ trong async context (do thư viện genai xử lý async khá phức tạp)
-        model = genai.GenerativeModel(MODEL_NAME) # vd: gemini-1.5-flash
-        response = model.generate_content(prompt)
+        # Khởi tạo client theo chuẩn SDK mới
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        
+        # Gọi API tạo nội dung
+        response = client.models.generate_content(
+            model=MODEL_NAME, # vd: gemini-2.5-flash
+            contents=prompt
+        )
         return response.text
 
     elif PROVIDER == "ollama":
