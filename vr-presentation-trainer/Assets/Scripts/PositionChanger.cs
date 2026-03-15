@@ -13,6 +13,7 @@ public class PositionChanger : MonoBehaviour
         {
             // Dịch chuyển tức thời đến tọa độ x=-3.5, y=0, z=1
             player.transform.position = new Vector3(-3.5f, 0f, 1f);
+            player.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // Quay mặt về phía bảng trình chiếu
 
             CustomPdfViewerUI pdfViewer = FindFirstObjectByType<CustomPdfViewerUI>();
             if (pdfViewer != null)

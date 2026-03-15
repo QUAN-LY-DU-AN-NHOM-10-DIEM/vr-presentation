@@ -42,6 +42,30 @@ public class GameModeManager : MonoBehaviour
     [Header("API Config")]
     public string backendUrl = "https://d251-2a09-bac5-55fd-101e-00-19b-fe.ngrok-free.app/api/v1/upload-context";
 
+    [Header("Player Controls")]
+    // Dùng MonoBehaviour để bạn có thể kéo BẤT KỲ script di chuyển nào vào đây
+    public MonoBehaviour playerMovementScript;
+
+    // Hàm gọi khi bắt đầu nhấp vào ô gõ chữ
+    public void LockPlayerMovement()
+    {
+        if (playerMovementScript != null)
+        {
+            playerMovementScript.enabled = false;
+            Debug.Log("🔒 Đã khóa di chuyển để gõ chữ");
+        }
+    }
+
+    // Hàm gọi khi gõ xong hoặc click ra ngoài
+    public void UnlockPlayerMovement()
+    {
+        if (playerMovementScript != null)
+        {
+            playerMovementScript.enabled = true;
+            Debug.Log("🔓 Đã mở lại di chuyển");
+        }
+    }
+
     private string selectedPdfPath = "";
     private string selectedTxtPath = "";
 
@@ -95,7 +119,7 @@ public class GameModeManager : MonoBehaviour
         // 1. BẬT LOADING (Chạy trên Main Thread)
         if (loadingPanel != null) loadingPanel.SetActive(true);
         if (analyzeButton != null) analyzeButton.interactable = false;
-        if (loadingText != null) loadingText.text = "Đang rèn từng byte dữ liệu để vượt ải Ngrok...";
+        if (loadingText != null) loadingText.text = "Đang upload file để phân tích...";
 
         bool isSuccess = false;
         string jsonResult = "";
@@ -175,9 +199,9 @@ public class GameModeManager : MonoBehaviour
 
             AnalyzeResponse responseData = JsonUtility.FromJson<AnalyzeResponse>(jsonResult);
             if (titleInputField != null) titleInputField.text = responseData.title;
-            if (contextInputField != null) contextInputField.text = responseData.context_text;
+            if (contextInputField != null) contextInputField.text = responseData.description;
 
-            if (loadingText != null) loadingText.text = "Phân tích xong! Mời user vào phòng.";
+            if (loadingText != null) loadingText.text = "Phân tích xong! Mời user kiểm tra và vào phòng.";
             await Task.Delay(1500); // Đợi 1.5s cho user đọc rồi tắt panel
         }
         else
@@ -190,6 +214,7 @@ public class GameModeManager : MonoBehaviour
         // TẮT LOADING
         if (loadingPanel != null) loadingPanel.SetActive(false);
         if (analyzeButton != null) analyzeButton.interactable = true;
+        analyzeButton.GetComponentInChildren<TMP_Text>().text = "Regenerate";
     }
 
     // --- CÁC HÀM HỖ TRỢ BÊN DƯỚI ---
