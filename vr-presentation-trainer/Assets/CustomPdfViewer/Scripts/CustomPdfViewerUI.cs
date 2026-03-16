@@ -20,9 +20,6 @@ namespace Assets.CustomPdfViewer.Scripts
 
         private string pdfPath;         // full path to PDF
 
-        [Header("Room State")]
-        public bool isInMainRoom = false;
-
         protected void Start()
         {
             nextButton?.onClick.AddListener(NextPage);
@@ -54,24 +51,18 @@ namespace Assets.CustomPdfViewer.Scripts
 
         public void NextPage()
         {
-            if (!isInMainRoom) return;
-
             navigator.Next();
             UpdateUI();
         }
 
         public void PreviousPage()
         {
-            if (!isInMainRoom) return;
-
             navigator.Previous();
             UpdateUI();
         }
 
         public void GoToPage(int pageNumber)
         {
-            if (!isInMainRoom) return;
-
             navigator.GoTo(pageNumber);
             UpdateUI();
         }
@@ -91,11 +82,6 @@ namespace Assets.CustomPdfViewer.Scripts
 
             if (previousButton != null)
                 previousButton.interactable = navigator.CurrentPage > 0;
-        }
-
-        public void EnablePresentationMode()
-        {
-            isInMainRoom = true;
         }
 
         private void OnDestroy()

@@ -1,14 +1,8 @@
-using Assets.CustomPdfViewer.Scripts;
-using NativeFilePickerNamespace;
 using System;
-using System.Collections;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.Networking;
 using System.IO;
 using TMPro;
 using UnityEngine.UI;
-using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net;
@@ -25,11 +19,6 @@ public class AnalyzeResponse
 
 public class GameModeManager : MonoBehaviour
 {
-    public GameObject gameMenu;
-    public Renderer screenRenderer;
-    public CustomPdfViewerUI pdfViewer;
-    public InputActionReference nextSlideInput;
-    public InputActionReference previousSlideInput;
     [Header("UI Fields (Để đổ chữ vào)")]
     public TMP_InputField titleInputField;
     public TMP_InputField contextInputField;
@@ -66,7 +55,7 @@ public class GameModeManager : MonoBehaviour
         }
     }
 
-    private string selectedPdfPath = "";
+    public string selectedPdfPath = "";
     private string selectedTxtPath = "";
 
     void Start()
@@ -83,7 +72,6 @@ public class GameModeManager : MonoBehaviour
             if (path != null)
             {
                 selectedPdfPath = path;
-                pdfViewer.LoadPDF(path, true);
             }
         }, fileTypes);
     }
@@ -261,66 +249,6 @@ public class GameModeManager : MonoBehaviour
             }
         }
         return isOk;
-    }
-
-    public void NextSlide()
-    {
-        if (pdfViewer != null)
-        {
-            pdfViewer.NextPage();
-        }
-    }
-    public void PreviousSlide()
-    {
-        if (pdfViewer != null)
-        {
-            pdfViewer.PreviousPage();
-        }
-    }
-
-    public void StartExam()
-    {
-        Debug.Log("Exam Mode Activated!"); HideMenu();
-    }
-    public void StartPractice()
-    {
-        Debug.Log("Practice Mode Activated!"); HideMenu();
-    }
-
-    private void HideMenu()
-    {
-        if (gameMenu != null)
-        {
-            gameMenu.SetActive(false);
-        }
-    }
-    private void OnNextSlidePressed(InputAction.CallbackContext context)
-    {
-        NextSlide(); // Calls your existing method!
-    }
-
-    private void OnPreviousSlidePressed(InputAction.CallbackContext context)
-    {
-        PreviousSlide(); // Calls your existing method!
-    }
-    private void OnEnable()
-    {
-        // When the object turns on, start listening to the controllers
-        if (nextSlideInput != null)
-            nextSlideInput.action.performed += OnNextSlidePressed;
-
-        if (previousSlideInput != null)
-            previousSlideInput.action.performed += OnPreviousSlidePressed;
-    }
-
-    private void OnDisable()
-    {
-        // When the object turns off, stop listening (prevents crashes)
-        if (nextSlideInput != null)
-            nextSlideInput.action.performed -= OnNextSlidePressed;
-
-        if (previousSlideInput != null)
-            previousSlideInput.action.performed -= OnPreviousSlidePressed;
     }
 }
 

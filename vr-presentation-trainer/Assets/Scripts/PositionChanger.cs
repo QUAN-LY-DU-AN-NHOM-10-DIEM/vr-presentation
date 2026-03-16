@@ -2,7 +2,10 @@ using Assets.CustomPdfViewer.Scripts;
 using UnityEngine;
 public class PositionChanger : MonoBehaviour
 {
+    public GameModeManager GameModeManager;
     public ModeManager modeManager;
+    public CustomPdfViewerUI pdfViewer1;
+    public CustomPdfViewerUI pdfViewer2;
 
     public Transform normalRoom;
     public Transform defenseRoom;
@@ -18,23 +21,20 @@ public class PositionChanger : MonoBehaviour
         {
             if (modeManager.selectedMode == "Normal")
             {
+                pdfViewer2.gameObject.SetActive(true);
+                pdfViewer2.LoadPDF(GameModeManager.selectedPdfPath, true);
                 // Dịch chuyển tức thời đến tọa độ x=-3.5, y=-1, z=2
                 player.transform.position = normalRoom.position;
             }
             else
             {
+                pdfViewer1.gameObject.SetActive(true);
+                pdfViewer1.LoadPDF(GameModeManager.selectedPdfPath,true);
                 // Dịch chuyển tức thời đến tọa độ x=-3.5, y=-1, z=2
                 player.transform.position = defenseRoom.position;
             }
 
             player.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // Quay mặt về phía bảng trình chiếu
-
-            CustomPdfViewerUI pdfViewer = FindFirstObjectByType<CustomPdfViewerUI>();
-            if (pdfViewer != null)
-            {
-                pdfViewer.EnablePresentationMode();
-            }
-
             Debug.Log("Dịch chuyển thành công!");
         }
         else
