@@ -2,6 +2,11 @@ using Assets.CustomPdfViewer.Scripts;
 using UnityEngine;
 public class PositionChanger : MonoBehaviour
 {
+    public ModeManager modeManager;
+
+    public Transform normalRoom;
+    public Transform defenseRoom;
+
     public void GoToMainRoom()
     {
         Debug.Log("Đang dịch chuyển VRPlayer vào phòng chính...");
@@ -11,8 +16,17 @@ public class PositionChanger : MonoBehaviour
 
         if (player != null)
         {
-            // Dịch chuyển tức thời đến tọa độ x=-3.5, y=0, z=1
-            player.transform.position = new Vector3(-3.5f, 0f, 1f);
+            if (modeManager.selectedMode == "Normal")
+            {
+                // Dịch chuyển tức thời đến tọa độ x=-3.5, y=-1, z=2
+                player.transform.position = normalRoom.position;
+            }
+            else
+            {
+                // Dịch chuyển tức thời đến tọa độ x=-3.5, y=-1, z=2
+                player.transform.position = defenseRoom.position;
+            }
+
             player.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // Quay mặt về phía bảng trình chiếu
 
             CustomPdfViewerUI pdfViewer = FindFirstObjectByType<CustomPdfViewerUI>();
