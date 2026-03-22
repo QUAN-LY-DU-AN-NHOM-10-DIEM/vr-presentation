@@ -1,10 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class ModeManager : MonoBehaviour
 {
     public Outline normalOutline;
     public Outline defenseOutline;
+    public TextMeshProUGUI normalText;
+    public TextMeshProUGUI defenseText;
 
     public string selectedMode = "Normal";
 
@@ -14,6 +17,9 @@ public class ModeManager : MonoBehaviour
 
         normalOutline.enabled = true;
         defenseOutline.enabled = false;
+        
+        normalText.enabled = true;
+        defenseText.enabled = false;
     }
 
     public void SelectNormal()
@@ -22,6 +28,9 @@ public class ModeManager : MonoBehaviour
 
         normalOutline.enabled = true;
         defenseOutline.enabled = false;
+
+        normalText.enabled = true;
+        defenseText.enabled = false;
     }
 
     public void SelectDefense()
@@ -30,5 +39,8 @@ public class ModeManager : MonoBehaviour
 
         defenseOutline.enabled = true;
         normalOutline.enabled = false;
+
+        defenseText.enabled = true;
+        normalText.enabled = false;
     }
 }
