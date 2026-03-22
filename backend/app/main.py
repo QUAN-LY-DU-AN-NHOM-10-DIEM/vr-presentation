@@ -1,12 +1,16 @@
 from fastapi import FastAPI
-from app.database import init_db
 from app.routers import topics
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="VR Presentation Trainer API")
 
-@app.on_event("startup")
-def on_startup():
-    init_db()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Cho phép mọi tên miền gọi API
+    allow_credentials=True,
+    allow_methods=["*"], # Cho phép mọi phương thức (GET, POST...)
+    allow_headers=["*"], # Cho phép mọi headers (bao gồm cả header của ngrok)
+)
 
 # Đăng ký router
 app.include_router(topics.router, prefix="/api/v1", tags=["Context Upload"])

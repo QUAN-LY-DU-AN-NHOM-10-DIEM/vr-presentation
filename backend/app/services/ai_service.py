@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import httpx
@@ -5,7 +6,7 @@ from dotenv import load_dotenv
 
 # Import các SDK
 from openai import AsyncOpenAI, AsyncAzureOpenAI
-import google.generativeai as genai
+from google import genai
 
 load_dotenv()
 
@@ -51,10 +52,14 @@ async def _call_llm(prompt: str) -> str:
         return response.choices[0].message.content
 
     elif PROVIDER == "gemini":
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        # Chạy đồng bộ trong async context (do thư viện genai xử lý async khá phức tạp)
-        model = genai.GenerativeModel(MODEL_NAME) # vd: gemini-1.5-flash
-        response = model.generate_content(prompt)
+        # Khởi tạo client theo chuẩn SDK mới
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        
+        # Gọi API tạo nội dung
+        response = client.models.generate_content(
+            model=MODEL_NAME, # vd: gemini-2.5-flash
+            contents=prompt
+        )
         return response.text
 
     elif PROVIDER == "ollama":
@@ -69,23 +74,35 @@ async def _call_llm(prompt: str) -> str:
     else:
         raise ValueError(f"Provider '{PROVIDER}' không được hỗ trợ.")
 
-async def clean_and_summarize(full_text: str) -> str:
+async def clean_and_summarize(full_text: str) -> dict:
     """
     Tóm tắt và làm sạch nội dung (Hàm chính)
     """
     prompt = f"""
     Bạn là Giám khảo chấm thi. Hãy đọc tài liệu dưới đây và trích xuất ý chính.
-    
-    YÊU CẦU OUTPUT (Bắt buộc tuân thủ):
-    1. Viết "SUMMARY: " theo sau là các gạch đầu dòng tóm tắt ý chính (để dùng làm checklist chấm điểm).
+
+    NHIỆM VỤ:
+    Bạn cần tạo ra 3 thông tin từ tài liệu: tiêu đề (title), mô tả ngắn (description), và tóm tắt ý chính (context_text).
+
+    YÊU CẦU CHO PHẦN TÓM TẮT (context_text):
+    1. Viết các gạch đầu dòng tóm tắt ý chính (để dùng làm checklist chấm điểm).
     2. Không được viết thêm lời dẫn, không markdown.
 
-    --- VÍ DỤ ĐỊNH DẠNG MẪU (CHỈ THAM KHẢO CẤU TRÚC - KHÔNG COPY NỘI DUNG) ---
-    SUMMARY: 
+    --- VÍ DỤ ĐỊNH DẠNG MẪU CHO PHẦN TÓM TẮT (CHỈ THAM KHẢO CẤU TRÚC - KHÔNG COPY NỘI DUNG) ---
     - [Khái niệm quan trọng A]: [Định nghĩa ngắn gọn]
     - [Quy trình/Các bước]: [Bước 1] -> [Bước 2] -> [Bước 3]
     -------------------------------------------------------------------------
+
+    YÊU CẦU OUTPUT (Bắt buộc tuân thủ):
+    Trả về kết quả dưới định dạng JSON hợp lệ. KHÔNG dùng markdown block (không bọc trong ```json), KHÔNG viết thêm bất kỳ lời dẫn nào.
     
+    Cấu trúc JSON bắt buộc:
+    {{
+        "title": "[Tạo một tiêu đề ngắn gọn cho tài liệu]",
+        "description": "[Tạo mô tả tóm tắt tài liệu trong 1-2 câu]",
+        "context_text": "[BẮT BUỘC LÀ 1 CHUỖI STRING DUY NHẤT. Dùng ký tự \\n để xuống dòng. Điền toàn bộ nội dung tóm tắt checklist với các gạch đầu dòng theo đúng format ví dụ ở trên]"
+    }}
+
     ---NỘI DUNG CẦN XỬ LÝ---
     {full_text}
     """
@@ -95,17 +112,38 @@ async def clean_and_summarize(full_text: str) -> str:
         raw_text = await _call_llm(prompt)
         raw_text = raw_text.strip()
         
-        # 2. Tìm phần SUMMARY
-        summary_match = re.search(r'SUMMARY:\s*(.+)', raw_text, re.IGNORECASE | re.DOTALL)
-        if summary_match:
-            summary = summary_match.group(1).strip()
+        # 2. Xử lý an toàn: Tìm chuỗi JSON
+        json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+        
+        if json_match:
+            json_str = json_match.group(0)
+            data = json.loads(json_str)
+            
+            # --- FIX: Xử lý mảng thành chuỗi ---
+            context_data = data.get("context_text", raw_text)
+            if isinstance(context_data, list):
+                # Nếu AI trả về list, nối các phần tử lại bằng dấu xuống dòng
+                final_context = "\n".join(str(item) for item in context_data)
+            else:
+                final_context = str(context_data)
+            # ------------------------------------
+            
+            return {
+                "title": str(data.get("title", "Untitled Presentation")),
+                "description": str(data.get("description", "")),
+                "context_text": final_context
+            }
         else:
-            # Fallback
-            summary = raw_text
-
-        return summary
+            return {
+                "title": "Untitled Presentation",
+                "description": "Failed to parse structured data.",
+                "context_text": raw_text
+            }
 
     except Exception as e:
-        print(f"❌ AI Service Error ({PROVIDER}): {e}")
-        # Lưu ý: Sửa lại return 1 biến string để tránh lỗi unpack tuple nếu bạn gọi hàm này ở nơi khác
-        return "Error: Không thể tóm tắt nội dung lúc này."
+        print(f"❌ AI Service Error: {e}")
+        return {
+            "title": "Error Processing AI",
+            "description": "An error occurred.",
+            "context_text": "Error: Không thể tóm tắt nội dung lúc này."
+        }
