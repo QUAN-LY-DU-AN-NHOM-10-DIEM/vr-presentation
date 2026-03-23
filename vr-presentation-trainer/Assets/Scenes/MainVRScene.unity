@@ -1191,7 +1191,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 100, y: 100, z: 96.46}
-  m_LocalScale: {x: 1, y: 1.3, z: 1}
+  m_LocalScale: {x: 1, y: 1.2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 977784360}
@@ -5260,7 +5260,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8135023674665499069, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8518324294302271954, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -13747,7 +13747,7 @@ MonoBehaviour:
   loadingPanel: {fileID: 1307606374}
   analyzeButton: {fileID: 1704750881}
   loadingText: {fileID: 1369025639}
-  backendUrl: https://7f93-1-53-159-221.ngrok-free.app/api/v1/upload-context
+  backendUrl: https://vr-presentation.onrender.com/api/v1/upload-context
   playerMovementScript: {fileID: 0}
   selectedPdfPath: 
 --- !u!1 &1109646770
