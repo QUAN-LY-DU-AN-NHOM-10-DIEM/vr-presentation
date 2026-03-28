@@ -2,10 +2,14 @@ using Assets.CustomPdfViewer.Scripts;
 using UnityEngine;
 public class PositionChanger : MonoBehaviour
 {
+    public GameObject player;
     public GameModeManager GameModeManager;
     public ModeManager modeManager;
+    public PauseMenuManager pauseManager;
     public CustomPdfViewerUI pdfViewer1;
+    public AudioSource defenseMicSource;
     public CustomPdfViewerUI pdfViewer2;
+    public AudioSource normalMicSource;
 
     public Transform normalRoom;
     public Transform defenseRoom;
@@ -14,15 +18,13 @@ public class PositionChanger : MonoBehaviour
     {
         Debug.Log("Đang dịch chuyển VRPlayer vào phòng chính...");
 
-        // Tìm object có tên chính xác là "VRPlayer"
-        GameObject player = GameObject.Find("VR Player");
-
         if (player != null)
         {
             if (modeManager.selectedMode == "Normal")
             {
                 pdfViewer2.gameObject.SetActive(true);
                 pdfViewer2.LoadPDF(GameModeManager.selectedPdfPath, true);
+                pauseManager.activeMicSource = normalMicSource;
                 // Dịch chuyển tức thời đến tọa độ x=-3.5, y=-1, z=2
                 player.transform.position = normalRoom.position;
             }
@@ -30,6 +32,7 @@ public class PositionChanger : MonoBehaviour
             {
                 pdfViewer1.gameObject.SetActive(true);
                 pdfViewer1.LoadPDF(GameModeManager.selectedPdfPath,true);
+                pauseManager.activeMicSource = defenseMicSource;
                 // Dịch chuyển tức thời đến tọa độ x=-3.5, y=-1, z=2
                 player.transform.position = defenseRoom.position;
             }
