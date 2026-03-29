@@ -1,13 +1,14 @@
+using SFB;
 using System;
-using UnityEngine;
 using System.IO;
-using TMPro;
-using UnityEngine.UI;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.Net.Security;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 [Serializable]
 public class AnalyzeResponse
@@ -66,6 +67,17 @@ public class GameModeManager : MonoBehaviour
 
     public void OpenFilePicker()
     {
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+        // --- WINDOWS PCVR ---
+        var extensions = new[] { new ExtensionFilter("PDF Files", "pdf") };
+        string[] paths = StandaloneFileBrowser.OpenFilePanel("Chọn file Slide PDF", "", extensions, false);
+
+        if (paths.Length > 0 && !string.IsNullOrEmpty(paths[0]))
+        {
+            selectedPdfPath = paths[0];
+            Debug.Log("💻 [PCVR] Đã chọn PDF: " + selectedPdfPath);
+        }
+#else
         string[] fileTypes = { "application/pdf" };
         NativeFilePicker.PickFile((path) =>
         {
@@ -74,6 +86,7 @@ public class GameModeManager : MonoBehaviour
                 selectedPdfPath = path;
             }
         }, fileTypes);
+#endif
     }
 
     public void OpenScriptPicker()
