@@ -1,4 +1,5 @@
 using Assets.CustomPdfViewer.Scripts;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PositionChanger : MonoBehaviour
@@ -24,6 +25,9 @@ public class PositionChanger : MonoBehaviour
     public Transform normalNPCGroup;
     [Tooltip("Kéo GameObject tổng chứa NPC phòng Defense vào đây")]
     public Transform defenseNPCGroup;
+
+    [Header("Timer")]
+    public PresentationTimer presentationTimer;
 
     public void GoToMainRoom()
     {
@@ -62,6 +66,11 @@ public class PositionChanger : MonoBehaviour
                     gazeTracker.activeClassroomParent = defenseNPCGroup;
                     gazeTracker.StartTracking();
                 }
+            }
+
+            if (presentationTimer != null)
+            {
+                presentationTimer.StartTimer();
             }
 
             player.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // Quay mặt về phía bảng trình chiếu

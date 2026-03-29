@@ -145,6 +145,7 @@ public class GazeTrackingManager : MonoBehaviour
     }
 
     public void PauseTracking() => isTracking = false;
+    public void ResumeTracking() => isTracking = true;
 
     public void StopAndExportTracking()
     {

@@ -1,8 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Dòng này bắt buộc Unity tự động thêm AudioSource vào object
-//[RequireComponent(typeof(AudioSource))]
 public class PauseMenuManager : MonoBehaviour
 {
     [Header("Menu Setup")]
@@ -10,7 +8,7 @@ public class PauseMenuManager : MonoBehaviour
     public ModeManager modeManager;
     public Transform vrCamera;
     public float spawnDistance = 1.5f;
-    public InputActionReference menuButtonInput; 
+    public InputActionReference menuButtonInput;
     public GameObject micOnImage;
     public GameObject micOffImage;
     [HideInInspector] public AudioSource activeMicSource;
@@ -22,6 +20,10 @@ public class PauseMenuManager : MonoBehaviour
     public AudioClip recordedClip;
     private string hardwareMicName;
     private bool isRecording = false;
+
+    [Header("External References")]
+    public GazeTrackingManager gazeTracker;
+    public PresentationTimer presentationTimer;
 
     private void Start()
     {
@@ -50,11 +52,17 @@ public class PauseMenuManager : MonoBehaviour
             // BẮT ĐẦU THU ÂM
             if (activeMicSource != null) activeMicSource.Stop();
 
+            // [TỐI ƯU RAM] - Bắt buộc HỦY file thu âm cũ trước khi tạo file mới
+            if (recordedClip != null)
+            {
+                Destroy(recordedClip);
+                recordedClip = null;
+            }
+
             recordedClip = Microphone.Start(hardwareMicName, false, 300, 44100);
             isRecording = true;
             if (micOnImage != null) micOnImage.SetActive(true);
             if (micOffImage != null) micOffImage.SetActive(false);
-
         }
         else
         {
@@ -69,14 +77,10 @@ public class PauseMenuManager : MonoBehaviour
 
     public void PlayRecording()
     {
-        if (isRecording)
-        {
-            return;
-        }
+        if (isRecording) return;
 
         if (recordedClip != null && activeMicSource != null)
         {
-            // Gắn file thu âm vào cái Mic 3D và phát nó!
             activeMicSource.clip = recordedClip;
             activeMicSource.Play();
         }
@@ -102,11 +106,18 @@ public class PauseMenuManager : MonoBehaviour
 
         if (isMenuActive)
         {
-            // Dời menu ra trước mặt người chơi
             Vector3 forward = new Vector3(vrCamera.forward.x, 0, vrCamera.forward.z).normalized;
             pauseCanvas.transform.position = vrCamera.position + (forward * spawnDistance);
             pauseCanvas.transform.LookAt(new Vector3(vrCamera.position.x, pauseCanvas.transform.position.y, vrCamera.position.z));
             pauseCanvas.transform.Rotate(0, 180, 0);
+
+            if (gazeTracker != null) gazeTracker.PauseTracking();
+            if (presentationTimer != null) presentationTimer.PauseTimer();
+        }
+        else
+        {
+            if (gazeTracker != null) gazeTracker.ResumeTracking();
+            if (presentationTimer != null) presentationTimer.ResumeTimer();
         }
     }
 
@@ -115,14 +126,25 @@ public class PauseMenuManager : MonoBehaviour
         // 1. Tắt menu Pause
         pauseCanvas.SetActive(false);
 
-        // 2. Tắt âm thanh nếu đang phát
+        // 2. Dọn dẹp hệ thống Micro & Xóa file ghi âm khỏi RAM
         if (activeMicSource != null) activeMicSource.Stop();
         Microphone.End(hardwareMicName);
         isRecording = false;
+
+        if (recordedClip != null)
+        {
+            Destroy(recordedClip);
+            recordedClip = null;
+        }
+
         if (micOnImage != null) micOnImage.SetActive(false);
         if (micOffImage != null) micOffImage.SetActive(true);
 
-        // 3. Dịch chuyển về Lobby
+        // 3. NGẮT VÀ DỌN DẸP HỆ THỐNG ĐÁNH GIÁ (Gaze & Timer)
+        if (gazeTracker != null) gazeTracker.StopAndExportTracking(); // Xuất file báo cáo rồi nghỉ
+        if (presentationTimer != null) presentationTimer.ForceResetTimer(); // Ép đồng hồ về 0 và nghỉ
+
+        // 4. Dịch chuyển về Lobby
         if (vrPlayer != null && lobbySpawnPoint != null)
         {
             float zOffset = 4.0f;
@@ -130,10 +152,14 @@ public class PauseMenuManager : MonoBehaviour
             Vector3 finalPosition = lobbySpawnPoint.position - (lobbySpawnPoint.forward * zOffset);
             Vector3 finalRotation = lobbySpawnPoint.eulerAngles + new Vector3(0f, rotationOffset, 0f);
 
-            // 4. Apply the new math to the player
             vrPlayer.transform.position = finalPosition;
             vrPlayer.transform.rotation = Quaternion.Euler(finalRotation);
         }
+
+        // 5. [TỐI ƯU RAM CUỐI CÙNG] - Ép Unity dọn rác triệt để
+        System.GC.Collect();
+        Resources.UnloadUnusedAssets();
+        Debug.Log("[System] Đã dọn dẹp RAM và thoát ra Lobby an toàn!");
     }
 
     public void ExitGame()
