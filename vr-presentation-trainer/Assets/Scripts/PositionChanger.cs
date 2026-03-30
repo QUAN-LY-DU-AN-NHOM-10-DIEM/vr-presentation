@@ -16,6 +16,9 @@ public class PositionChanger : MonoBehaviour
     // 2 Biến này chỉ dùng để lấy tọa độ (Position)
     public Transform normalRoom;
     public Transform defenseRoom;
+    public Transform normalTV;
+    public Transform defenseTV;
+
 
     [Header("Eye Tracking Integration")]
     public GazeTrackingManager gazeTracker;
@@ -40,6 +43,7 @@ public class PositionChanger : MonoBehaviour
                 pdfViewer2.gameObject.SetActive(true);
                 pdfViewer2.LoadPDF(GameModeManager.selectedPdfPath, true);
                 pauseManager.activeMicSource = normalMicSource;
+                pauseManager.roomTV = normalTV;
 
                 // Dịch chuyển tức thời đến tọa độ phòng Normal
                 player.transform.position = normalRoom.position;
@@ -56,6 +60,7 @@ public class PositionChanger : MonoBehaviour
                 pdfViewer1.gameObject.SetActive(true);
                 pdfViewer1.LoadPDF(GameModeManager.selectedPdfPath, true);
                 pauseManager.activeMicSource = defenseMicSource;
+                pauseManager.roomTV = defenseTV;
 
                 // Dịch chuyển tức thời đến tọa độ phòng Defense
                 player.transform.position = defenseRoom.position;

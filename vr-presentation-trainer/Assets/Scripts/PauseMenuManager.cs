@@ -6,12 +6,12 @@ public class PauseMenuManager : MonoBehaviour
     [Header("Menu Setup")]
     public GameObject pauseCanvas;
     public ModeManager modeManager;
-    public Transform vrCamera;
-    public float spawnDistance = 1.5f;
     public InputActionReference menuButtonInput;
     public GameObject micOnImage;
     public GameObject micOffImage;
+    public bool isPaused = false;
     [HideInInspector] public AudioSource activeMicSource;
+    [HideInInspector] public Transform roomTV;
 
     [Header("Navigation")]
     public GameObject vrPlayer;
@@ -90,6 +90,9 @@ public class PauseMenuManager : MonoBehaviour
     {
         if (menuButtonInput != null)
             menuButtonInput.action.performed += TogglePauseMenu;
+        
+        Vector3 forward = new Vector3(roomTV.forward.x, 0, roomTV.forward.z).normalized;
+        pauseCanvas.transform.position = roomTV.position + forward * 0.125f + Vector3.up * 0.225f + roomTV.right * 0.26f;
     }
 
     private void OnDisable()
@@ -101,15 +104,11 @@ public class PauseMenuManager : MonoBehaviour
     // --- 1. MENU CONTROLS ---
     private void TogglePauseMenu(InputAction.CallbackContext context)
     {
-        bool isMenuActive = !pauseCanvas.activeSelf;
-        pauseCanvas.SetActive(isMenuActive);
+        // bool isMenuActive = !pauseCanvas.activeSelf;
+        // pauseCanvas.SetActive(isMenuActive);
 
-        if (isMenuActive)
+        if (!isPaused)
         {
-            Vector3 forward = new Vector3(vrCamera.forward.x, 0, vrCamera.forward.z).normalized;
-            pauseCanvas.transform.position = vrCamera.position + (forward * spawnDistance);
-            pauseCanvas.transform.LookAt(new Vector3(vrCamera.position.x, pauseCanvas.transform.position.y, vrCamera.position.z));
-            pauseCanvas.transform.Rotate(0, 180, 0);
 
             if (gazeTracker != null) gazeTracker.PauseTracking();
             if (presentationTimer != null) presentationTimer.PauseTimer();
@@ -119,12 +118,13 @@ public class PauseMenuManager : MonoBehaviour
             if (gazeTracker != null) gazeTracker.ResumeTracking();
             if (presentationTimer != null) presentationTimer.ResumeTimer();
         }
+        isPaused = !isPaused;
     }
 
     public void ExitToLobby()
     {
         // 1. Tắt menu Pause
-        pauseCanvas.SetActive(false);
+        // pauseCanvas.SetActive(false);
 
         // 2. Dọn dẹp hệ thống Micro & Xóa file ghi âm khỏi RAM
         if (activeMicSource != null) activeMicSource.Stop();
