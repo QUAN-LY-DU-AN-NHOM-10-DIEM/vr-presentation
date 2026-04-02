@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.muratoreware.unitypdfviewer": "https://github.com/kdpkke/UnityPDFViewer.git?path=etc/UnityPackage",
+    "com.unity.2d.sprite": "1.0.0",
     "com.unity.ai.navigation": "2.0.11",
     "com.unity.cloud.gltfast": "6.16.1",
     "com.unity.collab-proxy": "2.11.4",
