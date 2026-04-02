@@ -2,7 +2,7 @@
   "dependencies": {
     "com.muratoreware.unitypdfviewer": "https://github.com/kdpkke/UnityPDFViewer.git?path=etc/UnityPackage",
     "com.unity.2d.sprite": "1.0.0",
-    "com.unity.ai.navigation": "2.0.11",
+    "com.unity.ai.navigation": "2.0.12",
     "com.unity.cloud.gltfast": "6.16.1",
     "com.unity.collab-proxy": "2.11.4",
     "com.unity.ide.rider": "3.0.39",
@@ -11,7 +11,7 @@
     "com.unity.multiplayer.center": "1.0.1",
     "com.unity.render-pipelines.universal": "17.3.0",
     "com.unity.test-framework": "1.6.0",
-    "com.unity.timeline": "1.8.11",
+    "com.unity.timeline": "1.8.12",
     "com.unity.ugui": "2.0.0",
     "com.unity.visualscripting": "1.9.11",
     "com.unity.xr.interaction.toolkit": "3.3.1",

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Net;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,9 +19,11 @@ public class PauseMenuManager : MonoBehaviour
     public GameObject vrPlayer;
     public Transform lobbySpawnPoint;
 
-    public AudioClip recordedClip;
     private string hardwareMicName;
     private bool isRecording = false;
+    private AudioClip tempRecordingClip; // File ghi âm tạm thời cho mỗi lần bấm
+    private List<float> allAudioChunks = new List<float>(); // Cái "xô" chứa toàn bộ âm thanh
+    private int sampleRate = 44100;
 
     [Header("External References")]
     public GazeTrackingManager gazeTracker;
@@ -38,83 +42,132 @@ public class PauseMenuManager : MonoBehaviour
         if (Microphone.devices.Length > 0)
         {
             hardwareMicName = Microphone.devices[0];
+            Debug.Log("Mic found");
+            if (!isRecording) ToggleRecording();
+        } else { 
+            Debug.Log("No mic found");
         }
-        if (micOnImage != null) micOnImage.SetActive(false);
-        if (micOffImage != null) micOffImage.SetActive(true);
     }
 
     public void ToggleRecording()
     {
-        if (string.IsNullOrEmpty(hardwareMicName)) return;
+        if (string.IsNullOrEmpty(hardwareMicName)) { Debug.Log("No mic yet"); return; }
 
         if (!isRecording)
         {
             // BẮT ĐẦU THU ÂM
-            if (activeMicSource != null) activeMicSource.Stop();
+            //if (activeMicSource != null) activeMicSource.Stop();
 
-            // [TỐI ƯU RAM] - Bắt buộc HỦY file thu âm cũ trước khi tạo file mới
-            if (recordedClip != null)
-            {
-                Destroy(recordedClip);
-                recordedClip = null;
-            }
-
-            recordedClip = Microphone.Start(hardwareMicName, false, 300, 44100);
+            tempRecordingClip = Microphone.Start(hardwareMicName, false, 600, sampleRate);
             isRecording = true;
             if (micOnImage != null) micOnImage.SetActive(true);
             if (micOffImage != null) micOffImage.SetActive(false);
+            Debug.Log("Continue Recording");
         }
         else
         {
             // DỪNG THU ÂM
+            int lastPos = Microphone.GetPosition(hardwareMicName);
             Microphone.End(hardwareMicName);
             isRecording = false;
-            PlayRecording();
+
+            // Rút trích âm thanh thực tế vừa thu và nhét vào List
+            if (lastPos > 0 && tempRecordingClip != null)
+            {
+                float[] chunkData = new float[lastPos * tempRecordingClip.channels];
+                tempRecordingClip.GetData(chunkData, 0);
+                allAudioChunks.AddRange(chunkData); // Cứ thế nối tiếp vào cuối danh sách
+            }
+            // [TỐI ƯU RAM] - Hủy file tạm ngay lập tức
+            if (tempRecordingClip != null)
+            {
+                Destroy(tempRecordingClip);
+                tempRecordingClip = null;
+            }
+
             if (micOnImage != null) micOnImage.SetActive(false);
             if (micOffImage != null) micOffImage.SetActive(true);
+
+            Debug.Log("⏸ Paused. Ready to Resume or Save.");
         }
     }
 
-    public void PlayRecording()
-    {
-        if (isRecording) return;
+    //public void PlayRecording()
+    //{
+    //    if (isRecording) return;
 
-        if (recordedClip != null && activeMicSource != null)
+    //    if (recordedClip != null && activeMicSource != null)
+    //    {
+    //        activeMicSource.clip = recordedClip;
+    //        activeMicSource.Play();
+    //    }
+    //}
+    private AudioClip CreateFinalStitchedClip()
+    {
+        if (allAudioChunks.Count == 0) return null;
+
+        // Tạo một AudioClip mới tinh, độ dài đúng bằng tổng tất cả các đoạn cộng lại
+        AudioClip finalClip = AudioClip.Create("FinalPresentation", allAudioChunks.Count, 1, sampleRate, false);
+        finalClip.SetData(allAudioChunks.ToArray(), 0);
+        return finalClip;
+    }
+
+    public void SaveRecordingToFile()
+    {
+        // Nếu họ đang thu mà bấm Save luôn, ép nó tự động Pause để lấy đoạn cuối
+        if (isRecording) ToggleRecording();
+        AudioClip finalClip = CreateFinalStitchedClip();
+
+        if (finalClip != null)
         {
-            activeMicSource.clip = recordedClip;
-            activeMicSource.Play();
+            string timeStamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            string fileName = "VR_Presentation_" + timeStamp + ".wav";
+
+            string savedPath = WavUtility.Save(fileName, finalClip);
+
+            Debug.Log("Audio File Saved Successfully at: " + savedPath);
+            // [TỐI ƯU RAM] - Hủy file tổng sau khi đã xuất ra file .wav thành công!
+            Destroy(finalClip);
+        }
+        else
+        {
+            Debug.Log("⚠️ No audio to save!");
         }
     }
 
     private void OnEnable()
     {
         if (menuButtonInput != null)
-            menuButtonInput.action.performed += TogglePauseMenu;
+            menuButtonInput.action.performed += TogglePauseState;
         
         Vector3 forward = new Vector3(roomTV.forward.x, 0, roomTV.forward.z).normalized;
         pauseCanvas.transform.position = roomTV.position + forward * 0.125f + Vector3.up * 0.225f + roomTV.right * 0.26f;
+        if (!isRecording) ToggleRecording();
     }
 
     private void OnDisable()
     {
         if (menuButtonInput != null)
-            menuButtonInput.action.performed -= TogglePauseMenu;
+            menuButtonInput.action.performed -= TogglePauseState;
+        if (isRecording) ToggleRecording();
     }
 
     // --- 1. MENU CONTROLS ---
-    private void TogglePauseMenu(InputAction.CallbackContext context)
+    public void TogglePauseState(InputAction.CallbackContext context)
     {
-        // bool isMenuActive = !pauseCanvas.activeSelf;
-        // pauseCanvas.SetActive(isMenuActive);
-
+        TogglePauseMenu();
+    }
+    public void TogglePauseMenu()
+    {
         if (!isPaused)
         {
-
+            if (isRecording) ToggleRecording();
             if (gazeTracker != null) gazeTracker.PauseTracking();
             if (presentationTimer != null) presentationTimer.PauseTimer();
         }
         else
         {
+            if (!isRecording) ToggleRecording();
             if (gazeTracker != null) gazeTracker.ResumeTracking();
             if (presentationTimer != null) presentationTimer.ResumeTimer();
         }
@@ -123,19 +176,17 @@ public class PauseMenuManager : MonoBehaviour
 
     public void ExitToLobby()
     {
-        // 1. Tắt menu Pause
-        // pauseCanvas.SetActive(false);
-
+        // 1. [TỐI ƯU RAM] - Đổ sạch âm thanh cũ
+        allAudioChunks.Clear();
+        if (tempRecordingClip != null)
+        {
+            Destroy(tempRecordingClip);
+            tempRecordingClip = null;
+        }
         // 2. Dọn dẹp hệ thống Micro & Xóa file ghi âm khỏi RAM
-        if (activeMicSource != null) activeMicSource.Stop();
+        //if (activeMicSource != null) activeMicSource.Stop();
         Microphone.End(hardwareMicName);
         isRecording = false;
-
-        if (recordedClip != null)
-        {
-            Destroy(recordedClip);
-            recordedClip = null;
-        }
 
         if (micOnImage != null) micOnImage.SetActive(false);
         if (micOffImage != null) micOffImage.SetActive(true);
