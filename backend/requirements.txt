@@ -9,3 +9,10 @@ psycopg2-binary
 sqlalchemy-utils
 openai 
 google-genai
+
+sentencepiece>=0.1.96
+numpy<2
+
+sherpa-onnx>=1.12.6
+soundfile
+av
