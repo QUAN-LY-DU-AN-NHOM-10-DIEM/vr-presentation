@@ -12,14 +12,17 @@ public class PauseMenuManager : MonoBehaviour
     public GameObject micOnImage;
     public GameObject micOffImage;
     public bool isPaused = false;
-    [HideInInspector] public AudioSource activeMicSource;
-    [HideInInspector] public Transform roomTV;
 
     [Header("Navigation")]
     public GameObject vrPlayer;
     public Transform lobbySpawnPoint;
+    [Header("Hand Menu Offsets")]
+    public GameObject playerLeftHand;
+    public Vector3 menuPositionOffset = new Vector3(-0.35f, 0.01f, -0.1f); // Lệch lên trên và ra trước một chút
+    public Vector3 menuRotationOffset = new Vector3(0f, -180f, -90f);    // Nghiêng 45 độ để dễ nhìn
 
-    private string hardwareMicName;
+    // Mic Info
+    public string hardwareMicName;
     private bool isRecording = false;
     private AudioClip tempRecordingClip; // File ghi âm tạm thời cho mỗi lần bấm
     private List<float> allAudioChunks = new List<float>(); // Cái "xô" chứa toàn bộ âm thanh
@@ -31,22 +34,15 @@ public class PauseMenuManager : MonoBehaviour
 
     private void Start()
     {
-        // 1. Xin quyền và tìm Micro của Kính VR / PC
-#if UNITY_ANDROID
-        if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone))
-        {
-            UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone);
+        if (playerLeftHand != null && pauseCanvas != null) {
+            // 1. Biến Canvas thành con của Bàn tay trái
+            pauseCanvas.transform.SetParent(playerLeftHand.transform);
+            // 2. Chỉnh vị trí lệch (Local Position) so với bàn tay
+            pauseCanvas.transform.localPosition = menuPositionOffset;
+            // 3. Chỉnh góc xoay (Local Rotation) để menu ngửa lên nhìn thẳng vào mắt
+            pauseCanvas.transform.localEulerAngles = menuRotationOffset;
         }
-#endif
-
-        if (Microphone.devices.Length > 0)
-        {
-            hardwareMicName = Microphone.devices[0];
-            Debug.Log("Mic found");
-            if (!isRecording) ToggleRecording();
-        } else { 
-            Debug.Log("No mic found");
-        }
+        if (pauseCanvas != null) pauseCanvas.SetActive(false);
     }
 
     public void ToggleRecording()
@@ -56,8 +52,6 @@ public class PauseMenuManager : MonoBehaviour
         if (!isRecording)
         {
             // BẮT ĐẦU THU ÂM
-            //if (activeMicSource != null) activeMicSource.Stop();
-
             tempRecordingClip = Microphone.Start(hardwareMicName, false, 600, sampleRate);
             isRecording = true;
             if (micOnImage != null) micOnImage.SetActive(true);
@@ -139,17 +133,12 @@ public class PauseMenuManager : MonoBehaviour
     {
         if (menuButtonInput != null)
             menuButtonInput.action.performed += TogglePauseState;
-        
-        Vector3 forward = new Vector3(roomTV.forward.x, 0, roomTV.forward.z).normalized;
-        pauseCanvas.transform.position = roomTV.position + forward * 0.125f + Vector3.up * 0.225f + roomTV.right * 0.26f;
-        if (!isRecording) ToggleRecording();
     }
 
     private void OnDisable()
     {
         if (menuButtonInput != null)
             menuButtonInput.action.performed -= TogglePauseState;
-        if (isRecording) ToggleRecording();
     }
 
     // --- 1. MENU CONTROLS ---
@@ -161,12 +150,14 @@ public class PauseMenuManager : MonoBehaviour
     {
         if (!isPaused)
         {
+            if (pauseCanvas != null) pauseCanvas.SetActive(true);
             if (isRecording) ToggleRecording();
             if (gazeTracker != null) gazeTracker.PauseTracking();
             if (presentationTimer != null) presentationTimer.PauseTimer();
         }
         else
         {
+            if (pauseCanvas != null) pauseCanvas.SetActive(false);
             if (!isRecording) ToggleRecording();
             if (gazeTracker != null) gazeTracker.ResumeTracking();
             if (presentationTimer != null) presentationTimer.ResumeTimer();
@@ -187,6 +178,7 @@ public class PauseMenuManager : MonoBehaviour
         //if (activeMicSource != null) activeMicSource.Stop();
         Microphone.End(hardwareMicName);
         isRecording = false;
+        pauseCanvas.SetActive(false);
 
         if (micOnImage != null) micOnImage.SetActive(false);
         if (micOffImage != null) micOffImage.SetActive(true);
