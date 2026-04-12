@@ -1,7 +1,12 @@
+import uuid
+from datetime import datetime
+
 from fastapi import UploadFile, HTTPException
 from app.services.file_processor import extract_pdf, read_txt
 from app.services.ai_service import clean_and_summarize
 from app.schemas import TopicResponse
+
+active_sessions = {}
 
 async def process_presentation_upload(
     slide_file: UploadFile, 
@@ -32,10 +37,22 @@ async def process_presentation_upload(
     # AI Processing
     ai_result = await clean_and_summarize(full_text)
     
+    # Khởi tạo Session ID
+    session_id = str(uuid.uuid4())
+    
+    # Lưu vào RAM
+    active_sessions[session_id] = {
+        "title": ai_result["title"],
+        "description": ai_result["description"],
+        "context": ai_result["context_text"],
+        "history": [],
+        "created_at": datetime.now() 
+    }
+
     topic = TopicResponse(
+        session_id=session_id, 
         title=ai_result["title"],
         description=ai_result["description"],
-        context_text=ai_result["context_text"]
     )
     
     return topic
