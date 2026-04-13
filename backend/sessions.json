@@ -1,99 +1,72 @@
 {
-  "5282fd10-abaa-4634-bb2c-0b334f399851": {
-    "title": "Software Testing",
-    "description": "Software Testing là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong đợi và đảm bảo sản phẩm phần mềm không có lỗi.",
-    "context": "Role và tầm quan trọng của kiểm tra phần mềm, các mức kiểm tra, testcases, nguyên tắc cơ bản của kiểm tra phần mềm, quy trình và kế hoạch kiểm tra, kiểm tra tự động, fault, error, failure, test plan, test automation, 7 nguyên tắc cơ bản của kiểm tra phần mềm, mô hình quy trình kiểm tra phần mềm.",
-    "history": [],
-    "created_at": "2026-04-14T00:04:57.315977"
-  },
-  "e29047e7-2a8c-457c-bbf7-dd9da6fac3c9": {
-    "title": "Giới thiệu về Kiểm thử phần mềm",
-    "description": "Tài liệu giới thiệu về Kiểm thử phần mềm, bao gồm khái niệm, vai trò, quá trình và nguyên tắc của Kiểm thử phần mềm.",
-    "context": "Dưới đây là kết quả trích xuất ý chính và tạo ra 3 thông tin từ tài liệu:\n\n```json\n{\n    \"title\": \"Giới thiệu về Kiểm thử phần mềm\",\n    \"description\": \"Tài liệu giới thiệu về Kiểm thử phần mềm, bao gồm khái niệm, vai trò, quá trình và nguyên tắc của Kiểm thử phần mềm.\",\n    \"context_text\": \n    - [Khái niệm quan trọng 1]: Kiểm thử phần mềm là phương pháp kiểm tra xem sản phẩm phần mềm có đáp ứng yêu cầu và đảm bảo sản phẩm phần mềm không có lỗi.\n    - [Quy trình/Các bước]: \n        1. Thiết kế thử nghiệm\n        2. Chuẩn bị dữ liệu thử nghiệm\n        3. Chạy chương trình với dữ liệu thử nghiệm\n        4. So sánh kết quả với thử nghiệm\n    - [Khái niệm quan trọng 2]: Test case là một tập hợp các hành động được thực hiện để xác minh một tính năng hoặc chức năng cụ thể của ứng dụng phần mềm.\n    - [Quy trình/Các bước]: \n        1. Thiết kế thử nghiệm\n        2. Chuẩn bị dữ liệu thử nghiệm\n        3. Chạy chương trình với dữ liệu thử nghiệm\n        4. So sánh kết quả với thử nghiệm\n    - [Khái niệm quan trọng 3]: 7 nguyên tắc cơ bản của Kiểm thử phần mềm bao gồm:\n        1. Kiểm thử cho thấy sự hiện diện của lỗi, không cho thấy sự vắng mặt của lỗi.\n        2. Kiểm thử đầy đủ là không thể.\n        3. Hoạt động kiểm thử nên bắt đầu càng sớm càng tốt.\n        4. Sự tập trung của lỗi.\n        5. Paradox thuốc diệt côn trùng.\n        6. Kiểm thử phụ thuộc vào ngữ cảnh.\n        7. Không có lỗi không có nghĩa là hệ thống hữu ích là một sự nhầm lẫn.\n    - [Quy trình/Các bước]: \n        1. Thiết kế thử nghiệm\n        2. Chuẩn bị dữ liệu thử nghiệm\n        3. Chạy chương trình với dữ liệu thử nghiệm\n        4. So sánh kết quả với thử nghiệm\n}\n```",
-    "history": [],
-    "created_at": "2026-04-14T00:24:01.165579"
-  },
-  "2f289f28-9739-453e-a492-e9cfa807aa67": {
+  "9ec32a22-c408-4715-80e3-c73cbcf6fa6c": {
     "title": "Giới Thiệu Kiểm Thử Phần Mềm",
-    "description": "Kiểm thử phần mềm là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong muốn hay không và đảm bảo sản phẩm phần mềm không có lỗi.",
-    "context": "- Kiểm thử phần mềm là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong muốn hay không. - Kiểm thử phần mềm giúp đảm bảo sản phẩm phần mềm không có lỗi. - Kiểm thử phần mềm bao gồm việc thực hiện phần mềm hoặc hệ thống thành phần bằng cách sử dụng công cụ thủ công hoặc tự động để đánh giá một hoặc nhiều tính chất quan tâm. - Mục đích của kiểm thử phần mềm là xác định lỗi, khe hở hoặc yêu cầu thiếu trong thực tế so với yêu cầu mong muốn.",
+    "description": "Kiểm thử phần mềm là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong muốn và đảm bảo sản phẩm phần mềm không có lỗi.",
+    "context": "- Kiểm thử phần mềm là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong muốn và đảm bảo sản phẩm phần mềm không có lỗi.\n- Có 7 nguyên tắc cơ bản của kiểm thử phần mềm:\n- - Kiểm thử cho thấy sự hiện diện của lỗi, không cho thấy sự vắng mặt của lỗi.\n- - Kiểm thử toàn diện là không thể.\n- - Hoạt động kiểm thử nên bắt đầu càng sớm càng tốt.\n- - Sự tập trung lỗi.\n- - Paradox thuốc diệt côn trùng.\n- - Kiểm thử phụ thuộc vào ngữ cảnh.\n- - Không có lỗi không có nghĩa là hệ thống hữu ích là một sai lầm.\n- Có 4 cấp độ kiểm thử phần mềm:\n- - Kiểm thử đơn vị/ thành phần -> Kiểm thử tích hợp -> Kiểm thử hệ thống -> Kiểm thử chấp nhận.\n- Có 2 khái niệm quan trọng trong kiểm thử phần mềm:\n- - Test case: Là một tập hợp các hành động được thực hiện để xác minh một tính năng hoặc chức năng cụ thể của ứng dụng phần mềm.\n- - Test scenario: Là một tập hợp các test case giúp đội ngũ kiểm thử xác định các đặc điểm tích cực và tiêu cực của dự án.\n- Có 2 loại tài liệu quan trọng trong kiểm thử phần mềm:\n- - Tài liệu kiểm thử: Là một tài liệu chi tiết mô tả chiến lược, mục tiêu, lịch trình, ước tính, sản phẩm và tài nguyên cần thiết để thực hiện kiểm thử cho một sản phẩm phần mềm.\n- - Tài liệu kiểm thử tự động: Là một tài liệu mô tả cách sử dụng phần mềm để kiểm soát việc thực hiện kiểm thử, so sánh kết quả thực tế với kết quả dự đoán, thiết lập điều kiện kiểm thử trước và các chức năng kiểm thử khác.",
     "history": [],
-    "created_at": "2026-04-14T00:26:02.891428"
-  },
-  "4168b7a5-0ee6-4b26-a110-808c81543e61": {
-    "title": "Untitled",
-    "description": "",
-    "context": "Tiêu đề: Lập kế hoạch kiểm thử phần mềm\nMô tả: Bài thuyết trình này sẽ giới thiệu về vai trò và tầm quan trọng của kiểm thử phần mềm, các mức kiểm thử, các nguyên tắc cơ bản của kiểm thử phần mềm, quy trình và kế hoạch kiểm thử, tự động hóa kiểm thử.\nCác ý chính để đánh giá bài thuyết trình:\nVai trò và tầm quan trọng của kiểm thử phần mềm\nCác mức kiểm thử (Unit/Component, Integration, System, Acceptance)\nCác nguyên tắc cơ bản của kiểm thử phần mềm\nQuy trình và kế hoạch kiểm thử\nTự động hóa kiểm thử\nVai trò của kiểm thử phần mềm trong phát triển phần mềm\nCác phương pháp kiểm thử phần mềm\nCác công cụ hỗ trợ kiểm thử phần mềm",
-    "history": [],
-    "created_at": "2026-04-14T00:28:09.543845"
-  },
-  "8b62b9ca-4572-42e1-9f2a-4cfa890d4902": {
-    "title": "Giới thiệu về Software Testing",
-    "description": "Tài liệu này giới thiệu về tầm quan trọng của software testing, các mức độ testing, testcases và các nguyên tắc cơ bản của software testing.",
-    "context": "- Software testing là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong đợi hay không và đảm bảo sản phẩm phần mềm không có lỗi.\n- Có 7 nguyên tắc cơ bản của software testing, bao gồm:\n- Nguyên tắc 1: Kiểm thử cho thấy sự hiện diện của lỗi, không cho thấy sự vắng mặt của lỗi.\n- Nguyên tắc 2: Kiểm thử toàn diện là không thể.\n- Nguyên tắc 3: Hoạt động kiểm thử nên bắt đầu càng sớm càng tốt.\n- Nguyên tắc 4: Lỗi tập trung.\n- Nguyên tắc 5: Paradox thuốc diệt côn trùng.\n- Nguyên tắc 6: Kiểm thử phụ thuộc vào ngữ cảnh.\n- Nguyên tắc 7: Không có lỗi không có nghĩa là hệ thống hữu ích là một sai lầm.\n- Có 4 mức độ kiểm thử: Unit/Component, Integration, System, Acceptance.\n- Testcases và Test scenarios là hai khái niệm quan trọng trong kiểm thử phần mềm.\n- A Test Plan là một tài liệu chi tiết mô tả chiến lược, mục tiêu, lịch trình, ước tính, sản phẩm và nguồn lực cần thiết để thực hiện kiểm thử cho một sản phẩm phần mềm.\n- Test automation là việc sử dụng phần mềm để kiểm soát việc thực hiện kiểm thử, so sánh kết quả thực tế với kết quả dự kiến và thiết lập điều kiện kiểm thử trước.",
-    "history": [],
-    "created_at": "2026-04-14T00:37:03.490725",
+    "created_at": "2026-04-14T00:51:48.080763",
     "questions": {
       "1": {
-        "question": "Bạn có thể giải thích rõ hơn về nguyên tắc cơ bản của software testing không?",
+        "question": "Kiểm thử phần mềm là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong muốn và đảm bảo sản phẩm phần mềm không có lỗi.",
         "answer": "HÔM NAY TÔI SẼ NÓI VỀ CÁI PHẦN SOFTWARE TESTING INSTROGE THÌ SOFTWARE CÓ TESTING SẼ CÒN CÓ BỐN PHẦN ĐÓ LÀ UNES TEST INTERACTION TEXASUN TEST VÀ TEST TỔNG THỂ",
         "file_name": "Question_1.m4a",
-        "timestamp": "2026-04-14T00:38:09.661996"
+        "timestamp": "2026-04-14T01:21:49.645528"
       },
       "2": {
-        "question": "Bạn đã biết đến 4 mức độ kiểm thử trong software testing chưa?",
-        "answer": "MÌNH NO MOT TILLING WRIF HAPPER DUI WAG THE WARLE LIVEST U ISO MAYBY A LERE SLOGAN OF THEN IN THE FIRST WICK",
-        "file_name": "Question_2.m4a",
-        "timestamp": "2026-04-14T00:38:10.141649"
+        "question": "Có bao nhiêu nguyên tắc cơ bản của kiểm thử phần mềm?",
+        "answer": "",
+        "file_name": "",
+        "timestamp": "2026-04-14T01:21:14.628328"
       },
       "3": {
-        "question": "Bạn có thể mô tả khái niệm Testcases và Test scenarios trong kiểm thử phần mềm không?",
+        "question": "Kiểm thử toàn diện là không thể vì lý do gì?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-14T00:37:46.589160"
+        "timestamp": "2026-04-14T01:21:14.628328"
       },
       "4": {
-        "question": "Bạn đã hiểu rõ về A Test Plan và vai trò của nó trong kiểm thử phần mềm chưa?",
+        "question": "Hoạt động kiểm thử nên bắt đầu càng sớm càng tốt vì lý do gì?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-14T00:37:46.589160"
+        "timestamp": "2026-04-14T01:21:14.628328"
       },
       "5": {
-        "question": "Bạn có thể giải thích lý do tại sao kiểm thử toàn diện là không thể không?",
+        "question": "Sự tập trung lỗi là nguyên tắc cơ bản của kiểm thử phần mềm",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-14T00:37:46.589160"
+        "timestamp": "2026-04-14T01:21:14.628328"
       },
       "6": {
-        "question": "Bạn đã biết đến Paradox thuốc diệt côn trùng trong software testing chưa?",
+        "question": "Paradox thuốc diệt côn trùng là nguyên tắc cơ bản của kiểm thử phần mềm",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-14T00:37:46.589160"
+        "timestamp": "2026-04-14T01:21:14.628328"
       },
       "7": {
-        "question": "Bạn có thể giải thích rõ hơn về Test automation và lợi ích của nó trong kiểm thử phần mềm không?",
+        "question": "Kiểm thử phụ thuộc vào ngữ cảnh vì lý do gì?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-14T00:37:46.589160"
+        "timestamp": "2026-04-14T01:21:14.628328"
       },
       "8": {
-        "question": "Bạn đã biết đến 7 nguyên tắc cơ bản của software testing chưa?",
+        "question": "Không có lỗi không có nghĩa là hệ thống hữu ích là một sai lầm vì lý do gì?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-14T00:37:46.589160"
+        "timestamp": "2026-04-14T01:21:14.628328"
       },
       "9": {
-        "question": "Bạn có thể mô tả khái niệm lỗi tập trung trong software testing không?",
+        "question": "Có bao nhiêu cấp độ kiểm thử phần mềm?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-14T00:37:46.589160"
+        "timestamp": "2026-04-14T01:21:14.628328"
       },
       "10": {
-        "question": "Bạn đã hiểu rõ về sự khác biệt giữa Unit/Component, Integration, System và Acceptance trong kiểm thử phần mềm chưa?",
+        "question": "Test case là một tập hợp các hành động được thực hiện để xác minh một tính năng hoặc chức năng cụ thể của ứng dụng phần mềm",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-14T00:37:46.589160"
+        "timestamp": "2026-04-14T01:21:14.628328"
       }
-    }
+    },
+    "presentation_transcript": "OK XIN CHÀO THẦY VÀ CÁC BẠN HÔM NAY THÌ MÌNH SẼ XIN THUYẾT TRÌNH VỀ CÁI PHẦN CHƯƠNG MỘT CỦA PHẦN SOFT WHITE STING THÌ VỀ NỘI DUNG THÌ MÌNH SẼ CÓ NHIỀU PHẦN THÌ MÌNH SẼ QUA ĐƯỢC CÁC THÔNG TIN NHƯ LÀ VAI TRÒ VÀ CÁI SỰ QUAN TRỌNG CỦA SOP WETESTING CŨNG NHƯ LÀ NHỮNG CÁI CẤP ĐỘ TESTING VÀ TEST CAY LÀ GÌ VÀ MỘT SỐ NGUYÊN LÝ CƠ BẢN TRONG TESTING CŨNG NHƯ LÀ TESTING RESET VÀ PLAN TEST OF THOMATION THÌ TẠI SAO CHÚNG TA LẠI NÊN TEST ĐỂ CHÚNG TA CÓ THỂ NHẬN DIỆN ĐƯỢC CÁC CÁI LỖI TRONG HỆ THỐNG VÀ GIẢM SAI SÓT THÌ SẼ CÓ MỘT VÀI THUẬT NGỮ MÌNH CẦN ĐƯỢC BIẾT ĐÓ CHÍNH LÀ LỖI THẤT BẠI VÀ R THÌ MÌNH CẦN PHÂN BIỆT NÓ NHƯ SAU THÌ LÀ FAL LÀ MỘT CÁI ĐIỀU KIỆN MÀ DẪN ĐẾN SỰ THẤT BẠI CỦA SHWARE CÒN R LÀ SỰ KHÁC NHAU GIỮA KẾT QUẢ THỰC TẾ VÀ KẾT QUẢ MONG MUỐN VÀ FELER LÀ CÁI KHẢ NĂNG MÀ SHOP QUE KHÔNG CÓ THỂ NÀO THỰC HIỆN ĐƯỢC CÁI HÀM ĐÓ VÀ SHE TESTING LÀ GÌ THÌ SHWATTING LÀ MỘT CÁI PHƯƠNG THỨC ĐỂ CÓ THỂ KIỂM TRA XEM LÀ CÁI SẢN PHẨM THỰC TẾ NÓ ĐÃ CÓ ĐÁP ỨNG ĐƯỢC CÁI NHU CẦU CỦA NGƯỜI DÙNG HAY CHƯA RỒI TEST CAY LÀ MỘT TẬP GỒM CÓ CÁI INBOOK CỤ THỂ VÀ CÓ CÁI MÔI TRƯỜNG MÔI TRƯỜNG THỰC HIỆN CŨNG NHƯ LÀ CÓ CÁI QUY TRÌNH VÀ CÓ CÁI KẾT QUẢ MONG MUỐN THÌ TEST CAY VỚI TEST SENNARIAL KHÁC NHAU TESTARAL LÀ MỘT TẬP HỢP CỦA CÁC STY ĐỂ GIÚP CHO CÁI TEAM CÓ THỂ NHẬN DIỆN ĐƯỢC CÁI TÍNH ĐẶC TÍNH TÍCH CỰC HOẶC TIÊU CỰC CỦA CÁI RETATE VÀ SẼ CÓ BẢY NGUYÊN TẮC TEST THỨ NHẤT LÀ TESTING CHỈ LÀ THỂ HIỆN LÀ CÓ SỰ XUẤT HIỆN CỦA LỖI CHỨ KHÔNG PHẢI LÀ SỰ KHÔNG XUẤT HIỆN CỦA NÓ TESTING QUÉT CẠN THÌ KHÔNG CÓ KHẢ NĂNG HÀNH ĐỘNG TEST NÊN LÀ BẮT ĐẦU CÀNG SỚM CÀNG TỐT THÌ COI CHỪNG CÁI BỊ LẦN THUỐC TRONG TESTING VÀ TESTING THÌ PHẢI DỰA TRÊN CÁI CONTAC CŨNG NHƯ LÀ NGUYÊN TẮC THỨ BẢY LÀ KHÔNG CÓ THẤT BẠI THÌ CŨNG KHÔNG CÓ NGHĨA LÀ CÁI HỆ THỐNG CHẠY ỔN ĐỊNH RỒI THÌ MÔ HÌNH TESTING SẼ THEO MỘT CÁI MÔ HÌNH CHỮ V NHƯ NÀY ĐÂY LÀ QUY TRÌNH TESTING VÀ TIẾP THEO LÀ KẾ HOẠCH TESTING THÌ SẼ ĐẦU TIÊN LÀ SẼ LÊN MỘT CÁI BUCTION CHI TIẾT SAU ĐÓ THÌ LÊN CÁI KẾ HOẠCH VÀ MỤC TIÊU CŨNG NHƯ LÀ LỊCH TRÌNH ƯỚC LƯỢNG VÀ CÁI TÀI NGUYÊN ĐỂ TEST OTOMATION LÀ DÙNG MỘT CÁI SHWARE ĐỂ CÓ THỂ THỰC THI TEST MỘT CÁCH TỰ ĐỘNG HAY LÀ BÀI THUYẾT TRÌNH ĐÃ HẾT CẢM ƠN THẦY VÀ CÁC BẠN ĐÃ LẮNG NGHE"
   }
 }

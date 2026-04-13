@@ -7,11 +7,9 @@ from app.services.file_processor import extract_pdf, read_txt
 from app.services.ai_service import (
     clean_and_summarize,
     generate_questions_with_ai,
-    _call_llm,
     evaluate_ac1,
     evaluate_ac2,
     evaluate_ac3,
-    evaluate_qa_item,
 )
 from app.services.session_manager import get_session, set_session, create_session
 from app.services.stt_service import transcribe_audio
@@ -91,8 +89,12 @@ async def process_generate_questions(
         raise HTTPException(status_code=400, detail="Session không có dữ liệu Context.")
 
     speech = (await transcribe_audio(audio_file)).strip()
+    print(f"Transcribed speech: {speech}")
     if len(speech.split()) < 5:
         speech = "Thí sinh trình bày rất ngắn, chưa rõ ràng ý chính."
+
+    session_data["presentation_transcript"] = speech
+    set_session(session_id, session_data)
 
     ai_questions = await generate_questions_with_ai(context_text, speech, mode)
     if not isinstance(ai_questions, list):
@@ -168,13 +170,12 @@ async def process_evaluate(session_id: str) -> EvaluationResponse:
 
     context = session_data.get("context", "")
     questions = session_data.get("questions", {})
+    presentation_transcript = session_data.get("presentation_transcript", "")
 
-    all_answers = " ".join(
-        [q.get("answer", "") for q in questions.values() if q.get("answer")]
+    ac1_result = await evaluate_ac1(context, presentation_transcript)
+    ac2_result = await evaluate_ac2(
+        presentation_transcript, len(presentation_transcript.split())
     )
-
-    ac1_result = await evaluate_ac1(context, all_answers)
-    ac2_result = await evaluate_ac2(all_answers, len(all_answers.split()))
     ac3_result = await evaluate_ac3(questions)
 
     ac1_score = ac1_result["score"]

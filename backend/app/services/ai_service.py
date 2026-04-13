@@ -2,7 +2,7 @@ import json
 import os
 import re
 import httpx
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict
 from dotenv import load_dotenv
 
 from app.schemas import KeywordStatus, QAItemEvaluation
@@ -90,10 +90,23 @@ async def _call_llm(prompt: str) -> str:
         )
         response = await client.chat.completions.create(
             model=MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a JSON-only API. You must output only a valid JSON object. NEVER output conversational text like 'Here is the result'. Start your response with '{' and end with '}'."
+                },
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1,
+            max_tokens=2048, # QUAN TRỌNG: Bơm thêm token để model không bị "hết hơi" giữa chừng
+            response_format={"type": "json_object"}
         )
         content = _get_content(response.choices[0].message.content)
+        
+        # Mẹo dọn dẹp phòng hờ: Nếu model vẫn lỡ mồm ở đầu, ta cắt bỏ phần text thừa
+        if "{" in content:
+            content = content[content.find("{"):]
+            
         print(f"[Groq] Raw response: {content[:500]}...")
         if not content:
             raise ValueError("Groq returned empty response")
@@ -146,26 +159,29 @@ async def _call_llm(prompt: str) -> str:
 
 
 async def clean_and_summarize(full_text: str) -> dict:
-    """
-    Tóm tắt và làm sạch nội dung với cấu trúc JSON strict để dễ parse.
-    """
     prompt = f"""Bạn là một Chuyên gia phân tích và đánh giá tài liệu cấp cao.
-Nhiệm vụ của bạn là đọc tài liệu dưới đây và trích xuất thông tin trọng tâm để Hội đồng giám khảo có thể dùng làm cơ sở chấm điểm bài thuyết trình.
+Nhiệm vụ của bạn là đọc tài liệu dưới đây và trích xuất thông tin trọng tâm.
 
-YÊU CẦU BẮT BUỘC:
-1. GIỮ NGUYÊN ngôn ngữ gốc của tài liệu (không dịch).
-2. BẢO TOÀN toàn bộ số liệu, facts, và thuật ngữ chuyên ngành quan trọng.
-3. KHÔNG viết lan man, chỉ trích xuất đúng trọng tâm.
-4. Output PHẢI là một chuỗi JSON hợp lệ. TUYỆT ĐỐI KHÔNG bọc trong code block (như ```json), KHÔNG có text thừa ở trước hay sau JSON.
+KỶ LUẬT NGÔN NGỮ (TUYỆT ĐỐI TUÂN THỦ):
+- BẮT BUỘC phải viết "title", "description" và "context" bằng CHÍNH NGÔN NGỮ CỦA TÀI LIỆU GỐC.
+- NẾU TÀI LIỆU LÀ TIẾNG ANH -> BẠN PHẢI TRẢ LỜI BẰNG TIẾNG ANH.
+- NẾU TÀI LIỆU LÀ TIẾNG VIỆT -> BẠN TRẢ LỜI BẰNG TIẾNG VIỆT.
+- TUYỆT ĐỐI KHÔNG DỊCH tài liệu tiếng Anh sang tiếng Việt. Việc dịch sẽ làm hỏng hệ thống chấm điểm thuật ngữ của chúng tôi.
+
+YÊU CẦU DỮ LIỆU:
+1. BẢO TOÀN toàn bộ số liệu, facts, và thuật ngữ chuyên ngành quan trọng.
+2. KHÔNG viết lan man, chỉ trích xuất đúng trọng tâm.
+3. Output PHẢI là một chuỗi JSON hợp lệ. TUYỆT ĐỐI KHÔNG bọc trong code block (như ```json).
 
 CẤU TRÚC JSON YÊU CẦU:
+(LƯU Ý: ĐIỀN NỘI DUNG VÀO DƯỚI ĐÂY BẰNG NGÔN NGỮ CỦA TÀI LIỆU)
 {{
-    "title": "Tiêu đề ngắn gọn của tài liệu (tối đa 15 từ)",
-    "description": "Mô tả tổng quan tài liệu gồm những phần chính nào (1-2 câu)",
+    "title": "<điền tiêu đề ngắn gọn>",
+    "description": "<điền mô tả tổng quan>",
     "context": [
-        "Ý chính 1 (chứa facts/số liệu)",
-        "Ý chính 2",
-        "Ý chính 3"
+        "<ý chính 1 chứa số liệu/fact>",
+        "<ý chính 2>",
+        "<ý chính 3>"
     ]
 }}
 
@@ -227,130 +243,90 @@ CẤU TRÚC JSON YÊU CẦU:
 
 
 async def generate_questions_with_ai(context: str, user_speech: str, mode: str) -> list:
-    """
-    Sinh câu hỏi phản biện dựa trên bối cảnh và lời thoại thực tế, xuất ra JSON mảng chuẩn.
-    """
     if mode == "exam":
-        persona = """
-ĐÓNG VAI: Bạn là một HỘI ĐỒNG GIÁM KHẢO KHÓ TÍNH VÀ SẮC BÉN trong một buổi bảo vệ.
-MỤC TIÊU: Đặt câu hỏi chất vấn, vạch lá tìm sâu, yêu cầu người trình bày phải giải thích rõ nguyên lý, dẫn chứng số liệu và bảo vệ được quan điểm của mình.
-GIỌNG ĐIỆU: Chuyên nghiệp, nghiêm khắc, trực diện. Xưng hô: "bạn" hoặc "em".
-"""
+        persona = """ĐÓNG VAI: Bạn là HỘI ĐỒNG GIÁM KHẢO KHÓ TÍNH. Mục tiêu: Đặt câu hỏi chất vấn, vạch lá tìm sâu."""
     else:
-        persona = """
-ĐÓNG VAI: Bạn là một MENTOR THÂN THIỆN VÀ TÂM HUYẾT.
-MỤC TIÊU: Đặt câu hỏi mở để dẫn dắt, gợi ý người trình bày tự nhận ra vấn đề và đào sâu hơn vào mảng kiến thức cốt lõi.
-GIỌNG ĐIỆU: Gợi mở, khích lệ, mang tính xây dựng. Xưng hô: "bạn" hoặc "em".
-"""
+        persona = """ĐÓNG VAI: Bạn là MENTOR THÂN THIỆN. Mục tiêu: Đặt câu hỏi mở, gợi mở vấn đề."""
 
     prompt = f"""{persona}
 
-TÀI LIỆU GỐC (SỰ THẬT CHUẨN XÁC DÙNG ĐỂ ĐỐI CHIẾU):
+TÀI LIỆU GỐC (Chuẩn kiến thức):
 {context}
 
-PHẦN TRÌNH BÀY CỦA NGƯỜI DÙNG (Nhận diện từ giọng nói, có thể chứa lỗi STT):
+PHẦN TRÌNH BÀY CỦA THÍ SINH:
 "{user_speech}"
 
-NHIỆM VỤ:
-Tạo ra đúng 10 câu hỏi dựa trên TÀI LIỆU GỐC. Dùng PHẦN TRÌNH BÀY để biết người dùng đang nói tới đoạn nào, nhưng BÁM SÁT SỰ THẬT vào TÀI LIỆU GỐC. 
+NHIỆM VỤ: Tạo ra 10 câu hỏi dựa trên TÀI LIỆU GỐC.
+1. Câu hỏi ngắn (dưới 30 từ), không hỏi Có/Không.
+2. TUYỆT ĐỐI KHÔNG dùng dấu nháy kép (") bên trong câu hỏi. Dùng nháy đơn (') nếu cần trích dẫn thuật ngữ.
 
-QUY TẮC:
-1. Câu hỏi phải ngắn gọn (dưới 30 từ), đánh thẳng vào vấn đề.
-2. Tuyệt đối KHÔNG hỏi dạng Có/Không.
-3. Nếu phát hiện từ lạ do lỗi nhận diện giọng nói, hãy tự động suy luận khái niệm đúng từ TÀI LIỆU GỐC.
-4. Output PHẢI là một chuỗi JSON hợp lệ với format bên dưới. KHÔNG dùng markdown code block, KHÔNG text thừa.
+KỶ LUẬT ĐẦU RA (CHỈ XUẤT JSON):
+Tuyệt đối không giải thích, không dùng markdown. Bạn phải trả về một object JSON có đúng một trường duy nhất tên là "questions". 
+Giá trị của "questions" phải là một mảng (array) chứa đúng 10 chuỗi văn bản (10 câu hỏi).
 
-ĐỊNH DẠNG JSON BẮT BUỘC:
-{{
-    "questions": [
-        "Nội dung câu hỏi 1",
-        "Nội dung câu hỏi 2",
-        "Nội dung câu hỏi 3",
-        "...",
-        "Nội dung câu hỏi 10"
-    ]
-}}
+Ví dụ cấu trúc bạn cần tự tưởng tượng: Object -> chứa key "questions" -> chứa Array -> chứa 10 Strings.
 """
 
     try:
         raw_text = await _call_llm(prompt)
         print(f"[generate_questions] Raw response:\n{raw_text[:500]}...")
 
-        # 1. Parse bằng hàm JSON extraction
+        # 1. Thử parse JSON trực tiếp trước (Nếu bạn đã bật JSON mode cho Groq)
+        try:
+            parsed_data = json.loads(raw_text)
+            if "questions" in parsed_data and isinstance(parsed_data["questions"], list):
+                return [str(q).strip() for q in parsed_data["questions"][:10]]
+        except json.JSONDecodeError:
+            pass # Chuyển sang fallback nếu JSON hỏng
+
+        # 2. Parse bằng hàm JSON extraction custom của bạn
         parsed_data = _extract_json(raw_text)
         if parsed_data and isinstance(parsed_data, dict) and "questions" in parsed_data:
             questions = parsed_data["questions"]
             if isinstance(questions, list) and len(questions) > 0:
                 return [str(q).strip() for q in questions[:10]]
 
-        # 2. Fallback 1: Nếu parse ra list trực tiếp (phòng khi LLM phớt lờ object wrap)
         if parsed_data and isinstance(parsed_data, list):
             return [str(q).strip() for q in parsed_data[:10]]
 
-        # 3. Fallback 2: Parse bằng Regex truy bắt list format
-        print(
-            "[generate_questions] JSON parse failed, falling back to Regex arrays/lists..."
-        )
-
-        # Bắt các câu nằm trong dấu ngoặc kép của một mảng giả định
-        quoted_items = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', raw_text)
-        if len(quoted_items) >= 5:  # Bỏ qua key "questions" nếu có
-            filtered_items = [
-                q for q in quoted_items if q.lower() != "questions" and len(q) > 10
-            ]
-            if filtered_items:
-                return filtered_items[:10]
-
-        # Bắt danh sách đánh số: 1. Câu hỏi, 2) Câu hỏi...
-        numbered_items = re.findall(
-            r"(?:^\d+[\.\)]\s*|- \s*)(.+?)(?:\n|$)", raw_text, re.MULTILINE
-        )
+        # 3. Fallback Regex (Đã được tinh chỉnh để bỏ qua lỗi lặt vặt)
+        print("[generate_questions] JSON parse failed, falling back to Regex...")
+        
+        # Bắt danh sách đánh số: 1. Câu hỏi, 2) Câu hỏi... (Ưu tiên regex này hơn vì nó an toàn với nháy kép)
+        numbered_items = re.findall(r'(?:^\d+[\.\)]\s*|- \s*)(.+?)(?:\n|$)', raw_text, re.MULTILINE)
         if len(numbered_items) >= 3:
-            return [q.strip() for q in numbered_items[:10]]
+            return [q.strip().strip('",') for q in numbered_items[:10]]
 
-        print(f"❌ Cảnh báo: AI không trả về format hợp lệ có thể parse được.")
+        # Regex bắt chuỗi trong JSON (Chỉ dùng cuối cùng)
+        quoted_items = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', raw_text)
+        filtered_items = [q for q in quoted_items if q.lower() != "questions" and len(q) > 15]
+        if len(filtered_items) >= 3:
+            return filtered_items[:10]
+
+        print(f"❌ Cảnh báo: AI trả về format không hợp lệ.")
         return []
 
     except Exception as e:
         print(f"❌ Lỗi AI sinh câu hỏi: {e}")
         return []
 
-import re
-import json
-from typing import Dict, List, Any
+async def evaluate_ac1(context: str, answer_text: str) -> dict:
+    prompt = f"""Bạn là một Giám khảo chấm thi chuyên nghiệp.
+Phân tích TÀI LIỆU GỐC và BÀI TRÌNH BÀY để trích xuất từ khóa.
 
-# Giả định bạn đã có class KeywordStatus và QAItemEvaluation (nếu dùng Pydantic)
-# Nếu dùng dict thông thường, bạn có thể bỏ qua việc instantiate các class này.
+QUY TẮC BẮT BUỘC:
+1. Trích xuất đúng 10 TỪ KHÓA cốt lõi từ TÀI LIỆU GỐC bằng ngôn ngữ gốc.
+2. Đối chiếu với BÀI TRÌNH BÀY để đánh giá trạng thái.
+3. Không bao giờ dùng dấu nháy kép (") bên trong nội dung nhận xét.
 
-async def evaluate_ac1(context: str, answer_text: str) -> Dict[str, Any]:
-    """
-    AC1: Đánh giá tỷ lệ bám sát nội dung/từ khóa gốc.
-    """
-    prompt = f"""Bạn là một Giám khảo chấm thi chuyên môn cao.
-Nhiệm vụ của bạn là đối chiếu TÀI LIỆU GỐC với BÀI TRÌNH BÀY của thí sinh để xem thí sinh nắm bắt và truyền đạt được bao nhiêu % lượng thông tin cốt lõi.
+KỶ LUẬT ĐẦU RA (CHỈ XUẤT JSON):
+Tuyệt đối không giải thích, không dùng markdown. Bạn phải trả về một object JSON chứa đúng 4 trường (keys) sau:
+- "keywords": Là một mảng. Mỗi phần tử là một object chứa "keyword" (tên từ khóa) và "status" (chỉ được chọn 1 trong 3 giá trị: "found", "paraphrased", hoặc "missing").
+- "coverage_percent": Số thực từ 0 đến 100, thể hiện tỷ lệ % bám sát.
+- "score": Số thực từ 0 đến 100, điểm số tương ứng.
+- "feedback": Chuỗi văn bản, nhận xét ngắn gọn của bạn.
 
-QUY TRÌNH ĐÁNH GIÁ:
-1. Trích xuất đúng 10-15 TỪ KHÓA hoặc CỤM TỪ cốt lõi nhất từ TÀI LIỆU GỐC.
-2. Đối chiếu với BÀI TRÌNH BÀY để gán trạng thái cho TỪNG từ khóa:
-   - "found": Từ/cụm từ xuất hiện chính xác.
-   - "paraphrased": Thí sinh có nói ý nghĩa tương đương.
-   - "missing": Thí sinh bỏ sót.
-3. Tính tỷ lệ (coverage_percent) và điểm (score).
-
-YÊU CẦU ĐẦU RA BẮT BUỘC (CHỈ XUẤT JSON, KHÔNG CÓ BẤT KỲ TEXT NÀO KHÁC):
-(LƯU Ý: ĐÂY CHỈ LÀ CẤU TRÚC, BẠN PHẢI TỰ ĐIỀN DỮ LIỆU THẬT TỪ TÀI LIỆU, TUYỆT ĐỐI KHÔNG COPY LẠI CÁC CHỮ TRONG NGOẶC KÉP DƯỚI ĐÂY)
-{{
-    "keywords": [
-        {{"keyword": "<trích_xuất_từ_khóa_1>", "status": "found"}},
-        {{"keyword": "<trích_xuất_từ_khóa_2>", "status": "paraphrased"}},
-        {{"keyword": "<trích_xuất_từ_khóa_3>", "status": "missing"}}
-    ],
-    "coverage_percent": <điền_số_từ_0_đến_100>,
-    "score": <điền_số_từ_0_đến_100>,
-    "feedback": "<tự_viết_nhận_xét_ngắn_gọn_của_bạn>"
-}}
-
---- BẮT ĐẦU PHÂN TÍCH ---
+--- BẮT ĐẦU ---
 TÀI LIỆU GỐC:
 {context}
 
@@ -359,28 +335,32 @@ BÀI TRÌNH BÀY CỦA THÍ SINH:
 """
     try:
         raw = await _call_llm(prompt)
-        print(f"[evaluate_ac1] Raw response:\n{raw[:500]}...")
         
+        # Do ta đã dùng mẹo cắt chuỗi ở hàm _call_llm, raw text bây giờ chắc chắn bắt đầu bằng {
+        data = json.loads(raw) 
+        
+        keywords = data.get("keywords", [])
+        return {
+            "score": float(data.get("score", 50.0)),
+            "coverage_percent": float(data.get("coverage_percent", 50.0)),
+            "feedback": data.get("feedback", "Đã đánh giá mức độ bám sát nội dung."),
+            "keywords": keywords,
+        }
+
+    except json.JSONDecodeError as e:
+        print(f"[evaluate_ac1] json.loads failed: {e}. Fallback to _extract_json")
         data = _extract_json(raw)
         if data and isinstance(data, dict):
-             # Map sang KeywordStatus nếu bạn đang dùng Pydantic/Dataclass
-            keywords = data.get("keywords", [])
             return {
                 "score": float(data.get("score", 50.0)),
                 "coverage_percent": float(data.get("coverage_percent", 50.0)),
-                "feedback": data.get("feedback", "Đã đánh giá mức độ bám sát nội dung."),
-                "keywords": keywords,
+                "feedback": data.get("feedback", ""),
+                "keywords": data.get("keywords", []),
             }
-
-        raise ValueError("Không parse được JSON hợp lệ từ LLM.")
+        return {"score": 50.0, "coverage_percent": 50.0, "feedback": "Lỗi format JSON do bị cắt đứt giữa chừng", "keywords": []}
     except Exception as e:
         print(f"❌ AC1 Error: {e}")
-        return {
-            "score": 50.0, 
-            "coverage_percent": 50.0,
-            "feedback": f"Lỗi đánh giá AC1: {str(e)}", 
-            "keywords": []
-        }
+        return {"score": 50.0, "coverage_percent": 50.0, "feedback": f"Lỗi hệ thống: {str(e)}", "keywords": []}
 
 
 async def evaluate_ac2(answer_text: str, total_words: int) -> Dict[str, Any]:
