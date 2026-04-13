@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import UploadFile, HTTPException
 
@@ -7,7 +7,12 @@ from app.services.file_processor import extract_pdf, read_txt
 from app.services.ai_service import clean_and_summarize, generate_questions_with_ai
 from app.services.session_manager import get_session, set_session, create_session
 from app.services.stt_service import transcribe_audio
-from app.schemas import GenerateQuestionResponse, TopicResponse
+from app.schemas import (
+    GenerateQuestionResponse,
+    TopicResponse,
+    TranscriptResult,
+    BatchTranscriptResponse,
+)
 
 CONFIG = {
     "max_questions": 10,
@@ -87,14 +92,56 @@ async def process_generate_questions(
 
     final_questions = final_questions[: CONFIG["max_questions"]]
 
-    session_data["history"].append(
-        {
-            "mode": mode,
-            "transcript": speech,
-            "generated_questions": final_questions,
+    questions_map = {}
+    for idx, question_text in enumerate(final_questions, start=1):
+        key = str(idx)
+        questions_map[key] = {
+            "question": question_text,
+            "answer": "",
+            "file_name": "",
             "timestamp": datetime.now().isoformat(),
         }
-    )
+
+    session_data["questions"] = questions_map
     set_session(session_id, session_data)
 
     return GenerateQuestionResponse(questions=final_questions)
+
+
+async def process_batch_transcribe(
+    session_id: str, audio_files: List[dict]
+) -> BatchTranscriptResponse:
+    session_data = get_session(session_id)
+    if not session_data:
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy phiên làm việc hoặc Session đã hết hạn.",
+        )
+
+    results = []
+    questions_map = session_data.get("questions", {})
+
+    for item in audio_files:
+        question_id = str(item["question_id"])
+        audio_file = item["audio_file"]
+        file_name = item.get("file_name", "")
+
+        speech = (await transcribe_audio(audio_file)).strip()
+        if len(speech.split()) < 5:
+            speech = "Thí sinh trình bày rất ngắn, chưa rõ ràng ý chính."
+
+        results.append(
+            TranscriptResult(question_id=int(question_id), transcript=speech)
+        )
+
+        questions_map[question_id] = {
+            "question": questions_map.get(question_id, {}).get("question", ""),
+            "answer": speech,
+            "file_name": file_name,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+    session_data["questions"] = questions_map
+    set_session(session_id, session_data)
+
+    return BatchTranscriptResponse(results=results, session_id=session_id)
