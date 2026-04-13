@@ -115,29 +115,6 @@ def _transcribe(audio_filename: str) -> str:
     return stream.result.text.strip()
 
 
-async def _correct_transcript(raw_text: str) -> str:
-    if not raw_text or len(raw_text.strip()) < 3:
-        return raw_text
-
-    prompt = f"""Bạn là một chuyên gia chỉnh sửa transcription tiếng Việt.
-Nhiệm vụ của bạn:
-1. Giữ nguyên nội dung tiếng Việt
-2. Sửa các từ tiếng Anh bị nhận dạng sai thành tiếng Anh đúng
-3. Nếu có từ tiếng Việt viết sai chính tả, sửa lại cho đúng
-4. Giữ nguyên ý nghĩa và ngữ cảnh
-
-Input: "{raw_text}"
-Output (chỉ trả về text đã sửa, không giải thích):"""
-
-    try:
-        corrected = (await _call_llm(prompt)).strip()
-        print(f"Transcript corrected: '{raw_text}' -> '{corrected}'")
-        return corrected
-    except Exception as e:
-        print(f"Transcript correction failed: {e}")
-        return raw_text
-
-
 async def transcribe_audio(audio_file: UploadFile) -> str:
     audio_bytes = await audio_file.read()
     await audio_file.seek(0)
@@ -149,8 +126,7 @@ async def transcribe_audio(audio_file: UploadFile) -> str:
         tmp.write(audio_bytes)
 
     try:
-        raw_text = _transcribe(tmp_path)
-        return await _correct_transcript(raw_text)
+        return _transcribe(tmp_path)
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

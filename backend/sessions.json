@@ -1,70 +1,98 @@
 {
-  "c3ea5a90-b87e-4ef9-a5cc-e5e7dfdd21be": {
-    "title": "Tổng quan về Kiểm thử Phần mềm",
-    "description": "Tài liệu này cung cấp cái nhìn tổng quan về kiểm thử phần mềm, bao gồm vai trò, các cấp độ, nguyên tắc cơ bản, quy trình, kế hoạch và tự động hóa.",
-    "context": "- [Khái niệm cơ bản]:\n- Fault: Điều kiện khiến phần mềm không thực hiện chức năng yêu cầu.\n- Error: Sai khác giữa kết quả thực tế và kết quả mong đợi.\n- Failure: Hệ thống/thành phần không thể thực hiện chức năng theo đặc tả.\n- [Định nghĩa Kiểm thử Phần mềm]: Phương pháp kiểm tra xem sản phẩm phần mềm thực tế có khớp với yêu cầu mong đợi không và đảm bảo sản phẩm không có lỗi.\n- [Mục đích Kiểm thử Phần mềm]: Xác định lỗi, thiếu sót hoặc yêu cầu bị thiếu.\n- [Vai trò của Kiểm thử Phần mềm]: Cải thiện độ tin cậy, chất lượng và hiệu suất; kiểm tra xem phần mềm có hoạt động đúng cách và không thực hiện những gì không được phép.\n- [Test Case]: Đặc tả đầu vào, điều kiện thực thi, quy trình và kết quả mong đợi để kiểm tra một mục tiêu kiểm thử cụ thể.\n- [Test Scenario]: Tập hợp các Test Case giúp xác định đặc tính tích cực và tiêu cực của dự án.\n- [7 Nguyên tắc Cơ bản của Kiểm thử Phần mềm]:\n  - Nguyên tắc 1: Kiểm thử chỉ ra sự hiện diện của lỗi, không phải sự vắng mặt.\n  - Nguyên tắc 2: Kiểm thử toàn diện là không thể.\n  - Nguyên tắc 3: Hoạt động kiểm thử nên bắt đầu càng sớm càng tốt.\n  - Nguyên tắc 4: Tập trung lỗi (Defect clustering).\n  - Nguyên tắc 5: Nghịch lý thuốc trừ sâu (The pesticide paradox).\n  - Nguyên tắc 6: Kiểm thử phụ thuộc vào ngữ cảnh.\n  - Nguyên tắc 7: Không có lỗi không có nghĩa là hệ thống hữu ích là một ngụy biện.\n- [Quy trình Kiểm thử Phần mềm (V-model)]: Thiết kế test case -> Chuẩn bị test data -> Chạy chương trình với test data -> So sánh kết quả với test case.\n- [Test Plan]: Tài liệu chi tiết mô tả chiến lược kiểm thử, mục tiêu, lịch trình, ước tính, sản phẩm bàn giao và nguồn lực cần thiết.\n- [Tự động hóa Kiểm thử]: Sử dụng phần mềm để kiểm soát việc thực thi kiểm thử, so sánh kết quả thực tế với dự đoán, thiết lập điều kiện tiên quyết và các chức năng báo cáo, kiểm soát kiểm thử khác.",
+  "5282fd10-abaa-4634-bb2c-0b334f399851": {
+    "title": "Software Testing",
+    "description": "Software Testing là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong đợi và đảm bảo sản phẩm phần mềm không có lỗi.",
+    "context": "Role và tầm quan trọng của kiểm tra phần mềm, các mức kiểm tra, testcases, nguyên tắc cơ bản của kiểm tra phần mềm, quy trình và kế hoạch kiểm tra, kiểm tra tự động, fault, error, failure, test plan, test automation, 7 nguyên tắc cơ bản của kiểm tra phần mềm, mô hình quy trình kiểm tra phần mềm.",
     "history": [],
-    "created_at": "2026-04-13T14:29:41.072941",
+    "created_at": "2026-04-14T00:04:57.315977"
+  },
+  "e29047e7-2a8c-457c-bbf7-dd9da6fac3c9": {
+    "title": "Giới thiệu về Kiểm thử phần mềm",
+    "description": "Tài liệu giới thiệu về Kiểm thử phần mềm, bao gồm khái niệm, vai trò, quá trình và nguyên tắc của Kiểm thử phần mềm.",
+    "context": "Dưới đây là kết quả trích xuất ý chính và tạo ra 3 thông tin từ tài liệu:\n\n```json\n{\n    \"title\": \"Giới thiệu về Kiểm thử phần mềm\",\n    \"description\": \"Tài liệu giới thiệu về Kiểm thử phần mềm, bao gồm khái niệm, vai trò, quá trình và nguyên tắc của Kiểm thử phần mềm.\",\n    \"context_text\": \n    - [Khái niệm quan trọng 1]: Kiểm thử phần mềm là phương pháp kiểm tra xem sản phẩm phần mềm có đáp ứng yêu cầu và đảm bảo sản phẩm phần mềm không có lỗi.\n    - [Quy trình/Các bước]: \n        1. Thiết kế thử nghiệm\n        2. Chuẩn bị dữ liệu thử nghiệm\n        3. Chạy chương trình với dữ liệu thử nghiệm\n        4. So sánh kết quả với thử nghiệm\n    - [Khái niệm quan trọng 2]: Test case là một tập hợp các hành động được thực hiện để xác minh một tính năng hoặc chức năng cụ thể của ứng dụng phần mềm.\n    - [Quy trình/Các bước]: \n        1. Thiết kế thử nghiệm\n        2. Chuẩn bị dữ liệu thử nghiệm\n        3. Chạy chương trình với dữ liệu thử nghiệm\n        4. So sánh kết quả với thử nghiệm\n    - [Khái niệm quan trọng 3]: 7 nguyên tắc cơ bản của Kiểm thử phần mềm bao gồm:\n        1. Kiểm thử cho thấy sự hiện diện của lỗi, không cho thấy sự vắng mặt của lỗi.\n        2. Kiểm thử đầy đủ là không thể.\n        3. Hoạt động kiểm thử nên bắt đầu càng sớm càng tốt.\n        4. Sự tập trung của lỗi.\n        5. Paradox thuốc diệt côn trùng.\n        6. Kiểm thử phụ thuộc vào ngữ cảnh.\n        7. Không có lỗi không có nghĩa là hệ thống hữu ích là một sự nhầm lẫn.\n    - [Quy trình/Các bước]: \n        1. Thiết kế thử nghiệm\n        2. Chuẩn bị dữ liệu thử nghiệm\n        3. Chạy chương trình với dữ liệu thử nghiệm\n        4. So sánh kết quả với thử nghiệm\n}\n```",
+    "history": [],
+    "created_at": "2026-04-14T00:24:01.165579"
+  },
+  "2f289f28-9739-453e-a492-e9cfa807aa67": {
+    "title": "Giới Thiệu Kiểm Thử Phần Mềm",
+    "description": "Kiểm thử phần mềm là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong muốn hay không và đảm bảo sản phẩm phần mềm không có lỗi.",
+    "context": "- Kiểm thử phần mềm là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong muốn hay không. - Kiểm thử phần mềm giúp đảm bảo sản phẩm phần mềm không có lỗi. - Kiểm thử phần mềm bao gồm việc thực hiện phần mềm hoặc hệ thống thành phần bằng cách sử dụng công cụ thủ công hoặc tự động để đánh giá một hoặc nhiều tính chất quan tâm. - Mục đích của kiểm thử phần mềm là xác định lỗi, khe hở hoặc yêu cầu thiếu trong thực tế so với yêu cầu mong muốn.",
+    "history": [],
+    "created_at": "2026-04-14T00:26:02.891428"
+  },
+  "4168b7a5-0ee6-4b26-a110-808c81543e61": {
+    "title": "Untitled",
+    "description": "",
+    "context": "Tiêu đề: Lập kế hoạch kiểm thử phần mềm\nMô tả: Bài thuyết trình này sẽ giới thiệu về vai trò và tầm quan trọng của kiểm thử phần mềm, các mức kiểm thử, các nguyên tắc cơ bản của kiểm thử phần mềm, quy trình và kế hoạch kiểm thử, tự động hóa kiểm thử.\nCác ý chính để đánh giá bài thuyết trình:\nVai trò và tầm quan trọng của kiểm thử phần mềm\nCác mức kiểm thử (Unit/Component, Integration, System, Acceptance)\nCác nguyên tắc cơ bản của kiểm thử phần mềm\nQuy trình và kế hoạch kiểm thử\nTự động hóa kiểm thử\nVai trò của kiểm thử phần mềm trong phát triển phần mềm\nCác phương pháp kiểm thử phần mềm\nCác công cụ hỗ trợ kiểm thử phần mềm",
+    "history": [],
+    "created_at": "2026-04-14T00:28:09.543845"
+  },
+  "8b62b9ca-4572-42e1-9f2a-4cfa890d4902": {
+    "title": "Giới thiệu về Software Testing",
+    "description": "Tài liệu này giới thiệu về tầm quan trọng của software testing, các mức độ testing, testcases và các nguyên tắc cơ bản của software testing.",
+    "context": "- Software testing là phương pháp kiểm tra xem sản phẩm phần mềm thực tế có đáp ứng được yêu cầu mong đợi hay không và đảm bảo sản phẩm phần mềm không có lỗi.\n- Có 7 nguyên tắc cơ bản của software testing, bao gồm:\n- Nguyên tắc 1: Kiểm thử cho thấy sự hiện diện của lỗi, không cho thấy sự vắng mặt của lỗi.\n- Nguyên tắc 2: Kiểm thử toàn diện là không thể.\n- Nguyên tắc 3: Hoạt động kiểm thử nên bắt đầu càng sớm càng tốt.\n- Nguyên tắc 4: Lỗi tập trung.\n- Nguyên tắc 5: Paradox thuốc diệt côn trùng.\n- Nguyên tắc 6: Kiểm thử phụ thuộc vào ngữ cảnh.\n- Nguyên tắc 7: Không có lỗi không có nghĩa là hệ thống hữu ích là một sai lầm.\n- Có 4 mức độ kiểm thử: Unit/Component, Integration, System, Acceptance.\n- Testcases và Test scenarios là hai khái niệm quan trọng trong kiểm thử phần mềm.\n- A Test Plan là một tài liệu chi tiết mô tả chiến lược, mục tiêu, lịch trình, ước tính, sản phẩm và nguồn lực cần thiết để thực hiện kiểm thử cho một sản phẩm phần mềm.\n- Test automation là việc sử dụng phần mềm để kiểm soát việc thực hiện kiểm thử, so sánh kết quả thực tế với kết quả dự kiến và thiết lập điều kiện kiểm thử trước.",
+    "history": [],
+    "created_at": "2026-04-14T00:37:03.490725",
     "questions": {
       "1": {
-        "question": "Bạn có thể giải thích rõ hơn về sự khác biệt giữa Unit Test, Integration Test, System Test và Acceptance Test không?",
-        "answer": "HÔM NAY TÔI SẼ NÓI VỀ CÁI PHẦN SOFTWARE TESTING. INTRODUCE THÌ SOFTWARE TESTING SẼ CÒN CÓ BỐN PHẦN ĐÓ LÀ UNIT TEST, INTEGRATION TEST, SYSTEM TEST VÀ TEST TỔNG THỂ.",
+        "question": "Bạn có thể giải thích rõ hơn về nguyên tắc cơ bản của software testing không?",
+        "answer": "HÔM NAY TÔI SẼ NÓI VỀ CÁI PHẦN SOFTWARE TESTING INSTROGE THÌ SOFTWARE CÓ TESTING SẼ CÒN CÓ BỐN PHẦN ĐÓ LÀ UNES TEST INTERACTION TEXASUN TEST VÀ TEST TỔNG THỂ",
         "file_name": "Question_1.m4a",
-        "timestamp": "2026-04-13T14:35:31.245094"
+        "timestamp": "2026-04-14T00:38:09.661996"
       },
       "2": {
-        "question": "Theo bạn, đâu là mục tiêu chính khi thực hiện các loại kiểm thử mà bạn vừa liệt kê?",
-        "answer": "MÌNH NÓ MỘT THỨ NGƯỜI HAY GẶP PHẢI DÙ WAG THÀNH QUẢ CỦA CUỘC CHIẾN ĐÔI LÚC LÀ CÓ LẼ MỘT KHẨU HIỆU LỚN NHẤT TRONG TUẦN ĐẦU TIÊN",
+        "question": "Bạn đã biết đến 4 mức độ kiểm thử trong software testing chưa?",
+        "answer": "MÌNH NO MOT TILLING WRIF HAPPER DUI WAG THE WARLE LIVEST U ISO MAYBY A LERE SLOGAN OF THEN IN THE FIRST WICK",
         "file_name": "Question_2.m4a",
-        "timestamp": "2026-04-13T14:35:32.657558"
+        "timestamp": "2026-04-14T00:38:10.141649"
       },
       "3": {
-        "question": "Tại sao việc phân chia thành 4 loại kiểm thử này lại quan trọng trong Software Testing?",
+        "question": "Bạn có thể mô tả khái niệm Testcases và Test scenarios trong kiểm thử phần mềm không?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-13T14:31:11.704672"
+        "timestamp": "2026-04-14T00:37:46.589160"
       },
       "4": {
-        "question": "Bạn có thể đưa ra một ví dụ cụ thể để minh họa cho mỗi loại kiểm thử đó không?",
+        "question": "Bạn đã hiểu rõ về A Test Plan và vai trò của nó trong kiểm thử phần mềm chưa?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-13T14:31:11.704672"
+        "timestamp": "2026-04-14T00:37:46.589160"
       },
       "5": {
-        "question": "Trong 4 loại kiểm thử đó, loại nào quan trọng nhất và tại sao?",
+        "question": "Bạn có thể giải thích lý do tại sao kiểm thử toàn diện là không thể không?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-13T14:31:11.704672"
+        "timestamp": "2026-04-14T00:37:46.589160"
       },
       "6": {
-        "question": "Bạn có nghĩ rằng việc thực hiện đầy đủ 4 loại kiểm thử này sẽ đảm bảo phần mềm không có lỗi không?",
+        "question": "Bạn đã biết đến Paradox thuốc diệt côn trùng trong software testing chưa?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-13T14:31:11.704672"
+        "timestamp": "2026-04-14T00:37:46.589160"
       },
       "7": {
-        "question": "Nguyên tắc nào của kiểm thử phần mềm liên quan trực tiếp đến việc phân chia các cấp độ kiểm thử này?",
+        "question": "Bạn có thể giải thích rõ hơn về Test automation và lợi ích của nó trong kiểm thử phần mềm không?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-13T14:31:11.704672"
+        "timestamp": "2026-04-14T00:37:46.589160"
       },
       "8": {
-        "question": "Vai trò của Tester sẽ thay đổi như thế nào khi thực hiện từng loại kiểm thử trong số này?",
+        "question": "Bạn đã biết đến 7 nguyên tắc cơ bản của software testing chưa?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-13T14:31:11.704672"
+        "timestamp": "2026-04-14T00:37:46.589160"
       },
       "9": {
-        "question": "Bạn có thể chia sẻ cách xác định phạm vi và mục tiêu cho từng loại kiểm thử không?",
+        "question": "Bạn có thể mô tả khái niệm lỗi tập trung trong software testing không?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-13T14:31:11.704672"
+        "timestamp": "2026-04-14T00:37:46.589160"
       },
       "10": {
-        "question": "Liệu có mối liên hệ nào giữa 4 loại kiểm thử này với V-model mà bạn đề cập không?",
+        "question": "Bạn đã hiểu rõ về sự khác biệt giữa Unit/Component, Integration, System và Acceptance trong kiểm thử phần mềm chưa?",
         "answer": "",
         "file_name": "",
-        "timestamp": "2026-04-13T14:31:11.704672"
+        "timestamp": "2026-04-14T00:37:46.589160"
       }
     }
   }

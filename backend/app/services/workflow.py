@@ -1,10 +1,18 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from fastapi import UploadFile, HTTPException
 
 from app.services.file_processor import extract_pdf, read_txt
-from app.services.ai_service import clean_and_summarize, generate_questions_with_ai
+from app.services.ai_service import (
+    clean_and_summarize,
+    generate_questions_with_ai,
+    _call_llm,
+    evaluate_ac1,
+    evaluate_ac2,
+    evaluate_ac3,
+    evaluate_qa_item,
+)
 from app.services.session_manager import get_session, set_session, create_session
 from app.services.stt_service import transcribe_audio
 from app.schemas import (
@@ -12,6 +20,9 @@ from app.schemas import (
     TopicResponse,
     TranscriptResult,
     BatchTranscriptResponse,
+    EvaluationResponse,
+    KeywordStatus,
+    QAItemEvaluation,
 )
 
 CONFIG = {
@@ -30,10 +41,12 @@ FALLBACK_QUESTIONS = [
 async def process_presentation_upload(
     slide_file: UploadFile, script_file: Optional[UploadFile] = None
 ) -> TopicResponse:
-    if not slide_file.filename.endswith(".pdf"):
+    if not slide_file.filename or not slide_file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Slide file must be PDF")
 
-    if script_file and not script_file.filename.endswith(".txt"):
+    if script_file and (
+        not script_file.filename or not script_file.filename.endswith(".txt")
+    ):
         raise HTTPException(status_code=400, detail="Script file must be TXT")
 
     slide_text = await extract_pdf(slide_file)
@@ -118,6 +131,7 @@ async def process_batch_transcribe(
             detail="Không tìm thấy phiên làm việc hoặc Session đã hết hạn.",
         )
 
+    context_text = session_data.get("context", "")
     results = []
     questions_map = session_data.get("questions", {})
 
@@ -145,3 +159,41 @@ async def process_batch_transcribe(
     set_session(session_id, session_data)
 
     return BatchTranscriptResponse(results=results, session_id=session_id)
+
+
+async def process_evaluate(session_id: str) -> EvaluationResponse:
+    session_data = get_session(session_id)
+    if not session_data:
+        raise HTTPException(status_code=404, detail="Session không tìm thấy")
+
+    context = session_data.get("context", "")
+    questions = session_data.get("questions", {})
+
+    all_answers = " ".join(
+        [q.get("answer", "") for q in questions.values() if q.get("answer")]
+    )
+
+    ac1_result = await evaluate_ac1(context, all_answers)
+    ac2_result = await evaluate_ac2(all_answers, len(all_answers.split()))
+    ac3_result = await evaluate_ac3(questions)
+
+    ac1_score = ac1_result["score"]
+    ac2_score = ac2_result["score"]
+    ac3_score = ac3_result["avg_score"]
+
+    total_score = round((ac1_score + ac2_score + ac3_score) / 3, 1)
+
+    return EvaluationResponse(
+        total_score=total_score,
+        ac1_score=ac1_score,
+        ac1_feedback=ac1_result["feedback"],
+        ac1_keywords=ac1_result["keywords"],
+        ac2_score=ac2_score,
+        ac2_feedback=ac2_result["feedback"],
+        ac2_has_intro=ac2_result["has_intro"],
+        ac2_has_closing=ac2_result["has_closing"],
+        ac3_score=ac3_score,
+        ac3_feedback=ac3_result["feedback"],
+        detailed_qa=ac3_result["detailed"],
+        session_id=session_id,
+    )

@@ -1,8 +1,16 @@
 from typing import List
 
 from fastapi import APIRouter, UploadFile, File, Query
-from app.services.workflow import process_generate_questions, process_batch_transcribe
-from app.schemas import GenerateQuestionResponse, BatchTranscriptResponse
+from app.services.workflow import (
+    process_generate_questions,
+    process_batch_transcribe,
+    process_evaluate,
+)
+from app.schemas import (
+    GenerateQuestionResponse,
+    BatchTranscriptResponse,
+    EvaluationResponse,
+)
 
 router = APIRouter()
 
@@ -18,7 +26,7 @@ async def generate_question_endpoint(
     return await process_generate_questions(session_id, audio_file, mode)
 
 
-@router.post("/batch-transcribe", response_model=BatchTranscriptResponse)
+@router.post("/submit", response_model=BatchTranscriptResponse)
 async def batch_transcribe_endpoint(
     session_id: str = Query(..., description="Session ID"),
     audio_files: List[UploadFile] = File(
@@ -54,3 +62,14 @@ async def batch_transcribe_endpoint(
         )
 
     return await process_batch_transcribe(session_id, audio_data)
+
+
+@router.get("/evaluate", response_model=EvaluationResponse)
+async def evaluate_endpoint(session_id: str = Query(..., description="Session ID")):
+    """
+    API đánh giá toàn diện theo 3 tiêu chí:
+    - AC1: Tỷ lệ bám sát từ khóa
+    - AC2: Cấu trúc bài thuyết trình (Mở bài, Kết bài)
+    - AC3: Điểm xử lý Q&A
+    """
+    return await process_evaluate(session_id)

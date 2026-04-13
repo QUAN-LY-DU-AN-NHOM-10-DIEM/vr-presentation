@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from pydantic import BaseModel
 from fastapi import UploadFile
@@ -30,3 +30,30 @@ class BatchTranscriptResponse(BaseModel):
 class BatchTranscribeRequest(BaseModel):
     session_id: str
     question_ids: List[int]
+
+
+class KeywordStatus(BaseModel):
+    keyword: str
+    status: str  # found | paraphrased | missing
+
+
+class QAItemEvaluation(BaseModel):
+    question_id: int
+    score: float
+    feedback: str
+    content_match_percent: float
+
+
+class EvaluationResponse(BaseModel):
+    total_score: float
+    ac1_score: float
+    ac1_feedback: str
+    ac1_keywords: List[KeywordStatus]
+    ac2_score: float
+    ac2_feedback: str
+    ac2_has_intro: bool
+    ac2_has_closing: bool
+    ac3_score: float
+    ac3_feedback: str
+    detailed_qa: List[QAItemEvaluation]
+    session_id: str
