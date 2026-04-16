@@ -131,7 +131,7 @@ public class PauseMenuManager : MonoBehaviour
         return finalClip;
     }
 
-    public string SaveRecordingToFile()
+    public void SaveRecordingToFile()
     {
         // Nếu họ đang thu mà bấm Save luôn, ép nó tự động Pause để lấy đoạn cuối
         TurnOffMic();
@@ -144,17 +144,16 @@ public class PauseMenuManager : MonoBehaviour
 
             string savedPath = WavUtility.Save(fileName, finalClip);
 
+            SessionManager.WavPath = savedPath;
+
             Debug.Log("Audio File Saved Successfully at: " + savedPath);
             // [TỐI ƯU RAM] - Hủy file tổng sau khi đã xuất ra file .wav thành công!
             Destroy(finalClip);
             allAudioChunks.Clear();
-
-            return savedPath;
         }
         else
         {
             Debug.Log("⚠️ No audio to save!");
-            return null;
         }
     }
 
@@ -248,6 +247,7 @@ public class PauseMenuManager : MonoBehaviour
 
     public void StartQaAPhase()
     {
+        SaveRecordingToFile();
         SendAudioForQuestion();
         
         gazeTracker.StopAndExportTracking();
@@ -261,7 +261,8 @@ public class PauseMenuManager : MonoBehaviour
     public void SendAudioForQuestion()
     {
         // 1. Save wav to disk and get the path
-        string wavPath = SaveRecordingToFile();
+        // string wavPath = SaveRecordingToFile();
+        string wavPath = SessionManager.WavPath;
 
         if (string.IsNullOrEmpty(wavPath))
         {
