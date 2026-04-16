@@ -31977,6 +31977,8 @@ MonoBehaviour:
   hardwareMicName: 
   gazeTracker: {fileID: 1018752937}
   presentationTimer: {fileID: 1108964647}
+  generateQuestionUrl: https://vr-presentation.onrender.com/api/v1/generate-question
+  mode: practice
 --- !u!1 &1614484477
 GameObject:
   m_ObjectHideFlags: 0
