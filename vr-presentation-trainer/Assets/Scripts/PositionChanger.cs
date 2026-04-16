@@ -89,7 +89,7 @@ public class PositionChanger : MonoBehaviour
 
             if (presentationTimer != null)
             {
-                presentationTimer.StartTimer();
+                presentationTimer.StartPresentationTimer();
             }
             PauseMenu.SetActive(true);
             pauseManager.TurnOnMic();

@@ -5,21 +5,25 @@ using UnityEngine.Events;
 public class PresentationTimer : MonoBehaviour
 {
     public enum TimerMode { CountUp, CountDown }
+    public enum SessionPhase { Presentation, QnA } // Thêm trạng thái để biết đang ở phần nào
 
     [Header("Cài đặt Timer")]
     public TimerMode mode = TimerMode.CountUp;
-    public float countdownDuration = 300f;
+    public float presentationDuration = 900f; // 15 phút
+    public float qnaDuration = 600f;          // 10 phút
 
     [Header("Hiển thị UI (Hỗ trợ nhiều màn hình)")]
     public TMP_Text[] timerTexts3D;
 
-    [Header("Sự kiện khi hết giờ")]
-    public UnityEvent onTimerEnd;
+    [Header("Sự kiện khi hết giờ")] 
+    public UnityEvent onPresentationTimeUp;   // Sẽ kích hoạt nếu hết giờ Thuyết trình
+    public UnityEvent onQnATimeUp;            // Sẽ kích hoạt nếu hết giờ Q&A
+
+    [HideInInspector] public SessionPhase currentPhase = SessionPhase.Presentation;
 
     private float currentTime;
+    private float currentDurationLimit; // Biến lưu lại xem đang dùng mốc thời gian nào
     private bool isTimerRunning = false;
-
-    // BIẾN NÀY DÙNG ĐỂ CHỐNG TRÀN RAM NÈ:
     private int lastUpdatedSecond = -1;
 
     void Update()
@@ -37,12 +41,21 @@ public class PresentationTimer : MonoBehaviour
             {
                 currentTime = 0;
                 StopTimer();
-                Debug.Log("[Timer] Đã hết giờ thuyết trình!");
-                onTimerEnd?.Invoke();
+
+                // KIỂM TRA XEM ĐANG Ở PHẦN NÀO ĐỂ GỌI ĐÚNG SỰ KIỆN
+                if (currentPhase == SessionPhase.Presentation)
+                {
+                    Debug.Log("[Timer] Đã hết giờ Thuyết Trình!");
+                    onPresentationTimeUp?.Invoke();
+                }
+                else if (currentPhase == SessionPhase.QnA)
+                {
+                    Debug.Log("[Timer] Đã hết giờ Q&A!");
+                    onQnATimeUp?.Invoke();
+                }
             }
         }
 
-        // TỐI ƯU HIỆU NĂNG: Chỉ format chuỗi chữ khi số giây thực sự thay đổi
         int currentSecond = Mathf.FloorToInt(currentTime);
         if (currentSecond != lastUpdatedSecond)
         {
@@ -68,7 +81,7 @@ public class PresentationTimer : MonoBehaviour
     public void ForceResetTimer()
     {
         isTimerRunning = false;
-        if (mode == TimerMode.CountDown) currentTime = countdownDuration;
+        if (mode == TimerMode.CountDown) currentTime = currentDurationLimit;
         else currentTime = 0f;
 
         lastUpdatedSecond = -1; // Ép UpdateUI chạy ngay lập tức 1 lần
@@ -76,11 +89,22 @@ public class PresentationTimer : MonoBehaviour
         Debug.Log("[Timer] Đã dọn dẹp và Reset sạch sẽ về 00:00:00");
     }
 
-    public void StartTimer()
+    public void StartPresentationTimer()
     {
-        ForceResetTimer(); // Dọn sạch rác trước khi bắt đầu
+        currentPhase = SessionPhase.Presentation;
+        currentDurationLimit = presentationDuration; // Áp dụng thời gian thuyết trình
+        ForceResetTimer();
         isTimerRunning = true;
-        Debug.Log($"[Timer] BẮT ĐẦU CHẠY. Chế độ: {mode}");
+        Debug.Log("[Timer] BẮT ĐẦU THUYẾT TRÌNH.");
+    }
+
+    public void StartQnATimer()
+    {
+        currentPhase = SessionPhase.QnA;
+        currentDurationLimit = qnaDuration; // Áp dụng thời gian Q&A
+        ForceResetTimer();
+        isTimerRunning = true;
+        Debug.Log("[Timer] BẮT ĐẦU Q&A.");
     }
 
     public void PauseTimer() => isTimerRunning = false;

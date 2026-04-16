@@ -231,11 +231,12 @@ public class PauseMenuManager : MonoBehaviour
 
     public void StartQaAPhase()
     {
+        SaveRecordingToFile();
+        gazeTracker.StopAndExportTracking();
         timerText.text = "The system is currently recording the answer to this question";
         titleText.text = "Q&A Session";
         titleBackground.color = new Color32(252, 129, 131, 255);
-        presentationTimer.ForceResetTimer();
-        presentationTimer.StartTimer();
+        presentationTimer.StartQnATimer();
         TurnOnMic();
     }
 }
