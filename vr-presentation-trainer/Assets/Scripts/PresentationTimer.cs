@@ -1,5 +1,6 @@
-using UnityEngine;
 using TMPro;
+using UnityEngine;
+using UnityEngine.Events;
 
 public class PresentationTimer : MonoBehaviour
 {
@@ -12,7 +13,10 @@ public class PresentationTimer : MonoBehaviour
     [Header("Hiển thị UI (Hỗ trợ nhiều màn hình)")]
     public TMP_Text[] timerTexts3D;
 
-    private float currentTime = 0f;
+    [Header("Sự kiện khi hết giờ")]
+    public UnityEvent onTimerEnd;
+
+    private float currentTime;
     private bool isTimerRunning = false;
 
     // BIẾN NÀY DÙNG ĐỂ CHỐNG TRÀN RAM NÈ:
@@ -34,6 +38,7 @@ public class PresentationTimer : MonoBehaviour
                 currentTime = 0;
                 StopTimer();
                 Debug.Log("[Timer] Đã hết giờ thuyết trình!");
+                onTimerEnd?.Invoke();
             }
         }
 
@@ -48,11 +53,10 @@ public class PresentationTimer : MonoBehaviour
 
     private void UpdateUI()
     {
-        int hours = Mathf.FloorToInt(currentTime / 3600f);
         int minutes = Mathf.FloorToInt((currentTime % 3600f) / 60f);
         int seconds = Mathf.FloorToInt(currentTime % 60f);
 
-        string timeString = string.Format("{0:00}:{1:00}:{2:00}", hours, minutes, seconds);
+        string timeString = $"{minutes:00}:{seconds:00}";
 
         foreach (TMP_Text text3D in timerTexts3D)
         {

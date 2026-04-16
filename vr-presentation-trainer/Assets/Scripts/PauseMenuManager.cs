@@ -1,5 +1,6 @@
 using System.Collections.Generic;
-using System.Net;
+using TMPro;
+using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,6 +12,11 @@ public class PauseMenuManager : MonoBehaviour
     public InputActionReference menuButtonInput;
     public GameObject micOnImage;
     public GameObject micOffImage;
+    [Header("Title UI References")]
+    public TextMeshProUGUI titleText;  // Kéo object chứa chữ vào đây
+    public Image titleBackground;
+    public TextMeshProUGUI timerText;
+    [HideInInspector] 
     public bool isPaused = false;
 
     [Header("Navigation")]
@@ -22,6 +28,7 @@ public class PauseMenuManager : MonoBehaviour
     public Vector3 menuRotationOffset = new Vector3(0f, -180f, -90f);    // Nghiêng 45 độ để dễ nhìn
 
     // Mic Info
+    [HideInInspector] 
     public string hardwareMicName;
     private bool isRecording = false;
     private AudioClip tempRecordingClip; // File ghi âm tạm thời cho mỗi lần bấm
@@ -45,10 +52,9 @@ public class PauseMenuManager : MonoBehaviour
         if (pauseCanvas != null) pauseCanvas.SetActive(false);
     }
 
-    public void ToggleRecording()
+    public void TurnOnMic()
     {
         if (string.IsNullOrEmpty(hardwareMicName)) { Debug.Log("No mic yet"); return; }
-
         if (!isRecording)
         {
             // BẮT ĐẦU THU ÂM
@@ -56,9 +62,14 @@ public class PauseMenuManager : MonoBehaviour
             isRecording = true;
             if (micOnImage != null) micOnImage.SetActive(true);
             if (micOffImage != null) micOffImage.SetActive(false);
-            Debug.Log("Continue Recording");
+            Debug.Log("Start/Continue Recording");
         }
-        else
+    }
+    public void TurnOffMic()
+    {
+        if (string.IsNullOrEmpty(hardwareMicName)) { Debug.Log("No mic yet"); return; }
+
+        if (isRecording)
         {
             // DỪNG THU ÂM
             int lastPos = Microphone.GetPosition(hardwareMicName);
@@ -109,7 +120,7 @@ public class PauseMenuManager : MonoBehaviour
     public void SaveRecordingToFile()
     {
         // Nếu họ đang thu mà bấm Save luôn, ép nó tự động Pause để lấy đoạn cuối
-        if (isRecording) ToggleRecording();
+        TurnOffMic();
         AudioClip finalClip = CreateFinalStitchedClip();
 
         if (finalClip != null)
@@ -122,6 +133,7 @@ public class PauseMenuManager : MonoBehaviour
             Debug.Log("Audio File Saved Successfully at: " + savedPath);
             // [TỐI ƯU RAM] - Hủy file tổng sau khi đã xuất ra file .wav thành công!
             Destroy(finalClip);
+            allAudioChunks.Clear();
         }
         else
         {
@@ -132,37 +144,40 @@ public class PauseMenuManager : MonoBehaviour
     private void OnEnable()
     {
         if (menuButtonInput != null)
-            menuButtonInput.action.performed += TogglePauseState;
+            menuButtonInput.action.performed += TogglePauseMenu;
     }
 
     private void OnDisable()
     {
         if (menuButtonInput != null)
-            menuButtonInput.action.performed -= TogglePauseState;
+            menuButtonInput.action.performed -= TogglePauseMenu;
     }
 
     // --- 1. MENU CONTROLS ---
-    public void TogglePauseState(InputAction.CallbackContext context)
+
+    public void TogglePauseMenu(InputAction.CallbackContext context)
     {
-        TogglePauseMenu();
+        if (pauseCanvas != null) pauseCanvas.SetActive(!pauseCanvas.activeSelf);
     }
-    public void TogglePauseMenu()
+    public void pauseAllOnGoingOperation()
     {
         if (!isPaused)
         {
-            if (pauseCanvas != null) pauseCanvas.SetActive(true);
-            if (isRecording) ToggleRecording();
+            TurnOffMic();
             if (gazeTracker != null) gazeTracker.PauseTracking();
             if (presentationTimer != null) presentationTimer.PauseTimer();
+            isPaused = true;
         }
-        else
+    }
+    public void unpauseAllOnGoingOperation()
+    {
+        if (isPaused)
         {
-            if (pauseCanvas != null) pauseCanvas.SetActive(false);
-            if (!isRecording) ToggleRecording();
+            if (!isRecording) TurnOnMic();
             if (gazeTracker != null) gazeTracker.ResumeTracking();
             if (presentationTimer != null) presentationTimer.ResumeTimer();
+            isPaused = false;
         }
-        isPaused = !isPaused;
     }
 
     public void ExitToLobby()
@@ -212,5 +227,15 @@ public class PauseMenuManager : MonoBehaviour
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #endif
+    }
+
+    public void StartQaAPhase()
+    {
+        timerText.text = "The system is currently recording the answer to this question";
+        titleText.text = "Q&A Session";
+        titleBackground.color = new Color32(252, 129, 131, 255);
+        presentationTimer.ForceResetTimer();
+        presentationTimer.StartTimer();
+        TurnOnMic();
     }
 }

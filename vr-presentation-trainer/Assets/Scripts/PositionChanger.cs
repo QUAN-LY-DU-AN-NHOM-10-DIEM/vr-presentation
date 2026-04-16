@@ -92,7 +92,7 @@ public class PositionChanger : MonoBehaviour
                 presentationTimer.StartTimer();
             }
             PauseMenu.SetActive(true);
-            if(!pauseManager.isPaused) pauseManager.ToggleRecording();
+            pauseManager.TurnOnMic();
 
             player.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // Quay mặt về phía bảng trình chiếu
             Debug.Log("Dịch chuyển thành công và đã tự động bật Eye Tracking!");

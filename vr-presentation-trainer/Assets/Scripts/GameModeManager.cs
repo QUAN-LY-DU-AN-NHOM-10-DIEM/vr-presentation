@@ -23,6 +23,8 @@ public class GameModeManager : MonoBehaviour
     [Header("UI Fields (Để đổ chữ vào)")]
     public TMP_InputField titleInputField;
     public TMP_InputField contextInputField;
+    public TMP_Text pdfFileNameText;
+    public TMP_Text scriptFileNameText;
 
     [Header("UI State & Loading")]
     public GameObject loadingPanel; // Kéo thả cái Panel Loading vào đây
@@ -32,30 +34,31 @@ public class GameModeManager : MonoBehaviour
     [Header("API Config")]
     public string backendUrl = "https://d251-2a09-bac5-55fd-101e-00-19b-fe.ngrok-free.app/api/v1/upload-context";
 
-    [Header("Player Controls")]
-    // Dùng MonoBehaviour để bạn có thể kéo BẤT KỲ script di chuyển nào vào đây
-    public MonoBehaviour playerMovementScript;
+    //[Header("Player Controls")]
+    //// Dùng MonoBehaviour để bạn có thể kéo BẤT KỲ script di chuyển nào vào đây
+    //public MonoBehaviour playerMovementScript;
 
-    // Hàm gọi khi bắt đầu nhấp vào ô gõ chữ
-    public void LockPlayerMovement()
-    {
-        if (playerMovementScript != null)
-        {
-            playerMovementScript.enabled = false;
-            Debug.Log("🔒 Đã khóa di chuyển để gõ chữ");
-        }
-    }
+    //// Hàm gọi khi bắt đầu nhấp vào ô gõ chữ
+    //public void LockPlayerMovement()
+    //{
+    //    if (playerMovementScript != null)
+    //    {
+    //        playerMovementScript.enabled = false;
+    //        Debug.Log("🔒 Đã khóa di chuyển để gõ chữ");
+    //    }
+    //}
 
-    // Hàm gọi khi gõ xong hoặc click ra ngoài
-    public void UnlockPlayerMovement()
-    {
-        if (playerMovementScript != null)
-        {
-            playerMovementScript.enabled = true;
-            Debug.Log("🔓 Đã mở lại di chuyển");
-        }
-    }
+    //// Hàm gọi khi gõ xong hoặc click ra ngoài
+    //public void UnlockPlayerMovement()
+    //{
+    //    if (playerMovementScript != null)
+    //    {
+    //        playerMovementScript.enabled = true;
+    //        Debug.Log("🔓 Đã mở lại di chuyển");
+    //    }
+    //}
 
+    [HideInInspector]
     public string selectedPdfPath = "";
     private string selectedTxtPath = "";
 
@@ -74,8 +77,8 @@ public class GameModeManager : MonoBehaviour
 
         if (paths.Length > 0 && !string.IsNullOrEmpty(paths[0]))
         {
-            selectedPdfPath = paths[0];
-            Debug.Log("💻 [PCVR] Đã chọn PDF: " + selectedPdfPath);
+            selectedPdfPath = paths[0]; 
+            if (pdfFileNameText != null) pdfFileNameText.text = Path.GetFileName(selectedPdfPath);
         }
 #else
         string[] fileTypes = { "application/pdf" };
@@ -84,6 +87,7 @@ public class GameModeManager : MonoBehaviour
             if (path != null)
             {
                 selectedPdfPath = path;
+                if (pdfFileNameText != null) pdfFileNameText.text = Path.GetFileName(selectedPdfPath);
             }
         }, fileTypes);
 #endif
@@ -91,16 +95,40 @@ public class GameModeManager : MonoBehaviour
 
     public void OpenScriptPicker()
     {
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+        // --- WINDOWS PCVR ---
+        var extensions = new[] { new ExtensionFilter("Text Files", "txt") };
+        string[] paths = StandaloneFileBrowser.OpenFilePanel("Chọn file Script TXT", "", extensions, false);
+
+        if (paths.Length > 0 && !string.IsNullOrEmpty(paths[0]))
+        {
+            selectedTxtPath = paths[0];
+
+            // Cắt lấy tên file và đổ vào UI
+            if (scriptFileNameText != null) scriptFileNameText.text = Path.GetFileName(selectedTxtPath);
+            // Đọc nội dung file và đổ vào InputField
+            if (contextInputField != null) contextInputField.text = File.ReadAllText(selectedTxtPath);
+
+        }
+#else
+        // --- MOBILE / STANDALONE VR (Android, etc.) ---
         string fileType = NativeFilePicker.ConvertExtensionToFileType("txt");
         string[] fileTypes = { fileType };
+        
         NativeFilePicker.PickFile((path) =>
         {
             if (path != null)
             {
                 selectedTxtPath = path;
+                
+                // Cắt lấy tên file và đổ vào UI
+                if (scriptFileNameText != null) scriptFileNameText.text = Path.GetFileName(selectedTxtPath);
+                
+                // Đọc nội dung file và đổ vào InputField
                 if (contextInputField != null) contextInputField.text = File.ReadAllText(path);
             }
         }, fileTypes);
+#endif
     }
 
     public void StartAnalysis()
