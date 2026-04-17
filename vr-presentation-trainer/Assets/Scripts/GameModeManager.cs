@@ -13,6 +13,7 @@ using UnityEngine.UI;
 [Serializable]
 public class AnalyzeResponse
 {
+    public string session_id;
     public string title;
     public string description;
     public string context_text;
@@ -227,6 +228,7 @@ public class GameModeManager : MonoBehaviour
             Debug.Log($"✅ THÀNH CÔNG: {jsonResult}");
 
             AnalyzeResponse responseData = JsonUtility.FromJson<AnalyzeResponse>(jsonResult);
+            SessionManager.SessionId = responseData.session_id;
             if (titleInputField != null) titleInputField.text = responseData.title;
             if (contextInputField != null) contextInputField.text = responseData.description;
 
