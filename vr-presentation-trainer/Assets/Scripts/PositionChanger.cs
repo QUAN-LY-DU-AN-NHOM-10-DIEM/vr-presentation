@@ -1,4 +1,5 @@
 using Assets.CustomPdfViewer.Scripts;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -25,6 +26,10 @@ public class PositionChanger : MonoBehaviour
     public Transform normalNPCGroup;
     [Tooltip("Kéo GameObject tổng chứa NPC phòng Defense vào đây")]
     public Transform defenseNPCGroup;
+
+    [Header("UI & Display Settings")]
+    public TextMeshProUGUI liveAdviceTextUInormal;
+    public TextMeshProUGUI liveAdviceTextUIdefense;
 
     [Header("Timer")]
     public PresentationTimer presentationTimer;
@@ -67,7 +72,8 @@ public class PositionChanger : MonoBehaviour
                 // Gán đúng cái Group chứa NPC vào để GazeTracker quét
                 if (gazeTracker != null)
                 {
-                    gazeTracker.activeClassroomParent = normalNPCGroup;
+                    gazeTracker.activeRoomParent = normalNPCGroup;
+                    gazeTracker.liveAdviceTextUI = liveAdviceTextUInormal; // Gán đúng UI cho từng phòng
                     gazeTracker.StartTracking();
                 }
             }
@@ -82,7 +88,8 @@ public class PositionChanger : MonoBehaviour
                 // Gán đúng cái Group chứa NPC vào để GazeTracker quét
                 if (gazeTracker != null)
                 {
-                    gazeTracker.activeClassroomParent = defenseNPCGroup;
+                    gazeTracker.activeRoomParent = defenseNPCGroup;
+                    gazeTracker.liveAdviceTextUI = liveAdviceTextUIdefense; // Gán đúng UI cho từng phòng
                     gazeTracker.StartTracking();
                 }
             }
