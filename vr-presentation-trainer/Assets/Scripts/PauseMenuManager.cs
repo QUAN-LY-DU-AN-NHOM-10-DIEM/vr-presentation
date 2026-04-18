@@ -21,6 +21,7 @@ public class PauseMenuManager : MonoBehaviour
     public InputActionReference menuButtonInput;
     public GameObject micOnImage;
     public GameObject micOffImage;
+    public SpeechAnalyzer speechAnalyzer;
     [Header("Title UI References")]
     public TextMeshProUGUI titleText;  // Kéo object chứa chữ vào đây
     public Image titleBackground;
@@ -71,6 +72,10 @@ public class PauseMenuManager : MonoBehaviour
         if (pauseCanvas != null) pauseCanvas.SetActive(false);
     }
 
+    public void TurnOnVoiceAnalyzer()
+    {
+        speechAnalyzer.StartAnalysis(hardwareMicName, tempRecordingClip);
+    }
     public void TurnOnMic()
     {
         if (string.IsNullOrEmpty(hardwareMicName)) { Debug.Log("No mic yet"); return; }
@@ -140,6 +145,7 @@ public class PauseMenuManager : MonoBehaviour
     {
         // Nếu họ đang thu mà bấm Save luôn, ép nó tự động Pause để lấy đoạn cuối
         TurnOffMic();
+        speechAnalyzer.StopAndGenerateReport();
         AudioClip finalClip = CreateFinalStitchedClip();
 
         if (finalClip != null)
@@ -210,6 +216,7 @@ public class PauseMenuManager : MonoBehaviour
         if (!isPaused)
         {
             TurnOffMic();
+            speechAnalyzer.PauseAnalysis();
             if (gazeTracker != null) gazeTracker.PauseTracking();
             if (presentationTimer != null) presentationTimer.PauseTimer();
             isPaused = true;
@@ -220,6 +227,7 @@ public class PauseMenuManager : MonoBehaviour
         if (isPaused)
         {
             if (!isRecording) TurnOnMic();
+            speechAnalyzer.ResumeAnalysis();
             if (gazeTracker != null) gazeTracker.ResumeTracking();
             if (presentationTimer != null) presentationTimer.ResumeTimer();
             isPaused = false;

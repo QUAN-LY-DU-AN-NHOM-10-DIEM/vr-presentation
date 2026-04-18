@@ -174,6 +174,26 @@ public class SpeechAnalyzer : MonoBehaviour
 
         Debug.Log("JSON Report Saved Successfully at: " + filePath);
     }
+
+    // TẠM DỪNG PHÂN TÍCH
+    public void PauseAnalysis()
+    {
+        if (isAnalyzing)
+        {
+            isAnalyzing = false;
+            Debug.Log("⏸ [Speech Analyzer] Đã tạm dừng phân tích.");
+        }
+    }
+
+    // TIẾP TỤC PHÂN TÍCH LẠI
+    public void ResumeAnalysis()
+    {
+        if (!isAnalyzing && activeClip != null)
+        {
+            isAnalyzing = true;
+            Debug.Log("▶️ [Speech Analyzer] Tiếp tục phân tích.");
+        }
+    }
 }
 
 [System.Serializable]

@@ -9649,7 +9649,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8135023674665499069, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8518324294302271954, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -25761,6 +25761,57 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RectMask2D
   m_Padding: {x: 0, y: 0, z: 0, w: 0}
   m_Softness: {x: 0, y: 0}
+--- !u!1 &1282503111
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1282503113}
+  - component: {fileID: 1282503112}
+  m_Layer: 0
+  m_Name: SpeechAnalyzer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1282503112
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1282503111}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 284fa2cc717e43a4fbad69c477300da0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpeechAnalyzer
+  sampleWindow: 512
+  analyzeInterval: 0.1
+  dbCalibrationOffset: 85
+  silenceDbThreshold: 25
+  maxSilenceDuration: 2
+  tooQuietLimit: 20
+  tooLoudLimit: 75
+--- !u!4 &1282503113
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1282503111}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 100, y: -0.1, z: 99.97}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1282632634
 GameObject:
   m_ObjectHideFlags: 0
@@ -32630,9 +32681,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   pauseCanvas: {fileID: 1936999994}
   modeManager: {fileID: 2118384658}
-  menuButtonInput: {fileID: -8069514856583376848, guid: b6d5c44ebe3244b7692e81ae8265eb22, type: 3}
+  menuButtonInput: {fileID: 3255699453802992142, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   micOnImage: {fileID: 2088628083}
   micOffImage: {fileID: 2017053361}
+  speechAnalyzer: {fileID: 1282503112}
   titleText: {fileID: 775893869}
   titleBackground: {fileID: 2007279710}
   timerText: {fileID: 919324072}
@@ -43839,3 +43891,4 @@ SceneRoots:
   - {fileID: 650282701}
   - {fileID: 755273793}
   - {fileID: 1577156863}
+  - {fileID: 1282503113}
