@@ -65,6 +65,7 @@ public class PositionChanger : MonoBehaviour
             {
                 pdfViewer2.gameObject.SetActive(true);
                 pdfViewer2.LoadPDF(GameModeManager.selectedPdfPath, true);
+                pdfViewer2.GoToPage(0);
 
                 // Dịch chuyển tức thời đến tọa độ phòng Normal
                 player.transform.position = normalRoom.position;
@@ -81,6 +82,7 @@ public class PositionChanger : MonoBehaviour
             {
                 pdfViewer1.gameObject.SetActive(true);
                 pdfViewer1.LoadPDF(GameModeManager.selectedPdfPath, true);
+                pdfViewer1.GoToPage(0);
 
                 // Dịch chuyển tức thời đến tọa độ phòng Defense
                 player.transform.position = defenseRoom.position;

@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Networking;
+using UnityPdfViewer;
 
 [System.Serializable]
 public class GenerateQuestionResponse
@@ -18,6 +19,8 @@ public class PauseMenuManager : MonoBehaviour
     [Header("Menu Setup")]
     public GameObject pauseCanvas;
     public ModeManager modeManager;
+    public PdfViewerUI pdf1;
+    public PdfViewerUI pdf2;
     public InputActionReference menuButtonInput;
     public GameObject micOnImage;
     public GameObject micOffImage;
@@ -531,6 +534,8 @@ public class PauseMenuManager : MonoBehaviour
         // 2. Stop current recording & clear old audio in RAM
         TurnOffMic();
         allAudioChunks.Clear();
+        if (pdf1.isActiveAndEnabled) pdf1.GoToPage(0);
+        if (pdf2.isActiveAndEnabled) pdf2.GoToPage(0);
         if (tempRecordingClip != null)
         {
             Destroy(tempRecordingClip);
