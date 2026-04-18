@@ -2,8 +2,6 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Networking;
-using System.IO;
 
 [RequireComponent(typeof(CanvasGroup))]
 public class QuestionDialogManager : MonoBehaviour
@@ -25,6 +23,7 @@ public class QuestionDialogManager : MonoBehaviour
 
     private List<string> currentQuestionList = new List<string>();
     private int currentQuestionIndex = 0;
+    private bool isRecordingPhase = false; // Cờ kiểm soát việc ghi âm để tránh lỗi "No audio to save"
 
     // Quản lý chặt chẽ các Coroutine đang chạy
     private Coroutine currentTimerRoutine;
@@ -33,6 +32,13 @@ public class QuestionDialogManager : MonoBehaviour
     [Header("Dependencies")]
     public PauseMenuManager pauseMenuManager;
     public NpcManager npcManager;
+
+    [Header("Room Setup (Vị trí hiển thị UI)")]
+    public ModeManager modeManager; // Để biết đang ở phòng nào
+    [Tooltip("Kéo Empty GameObject chứa tọa độ UI phòng Normal vào đây")]
+    public Transform normalRoomAnchor;
+    [Tooltip("Kéo Empty GameObject chứa tọa độ UI phòng Defense vào đây")]
+    public Transform defenseRoomAnchor;
 
     private void Awake()
     {
@@ -49,6 +55,23 @@ public class QuestionDialogManager : MonoBehaviour
         canvasGroup.blocksRaycasts = false;
     }
 
+    // ==========================================
+    // HÀM MỚI: TỰ ĐỘNG DỊCH CHUYỂN UI VỀ ĐÚNG PHÒNG
+    // ==========================================
+    private void RepositionUIToCurrentRoom()
+    {
+        if (modeManager == null) return;
+
+        // Dựa vào mode để chọn điểm neo (giống logic bên NpcManager của bạn)
+        Transform targetAnchor = (modeManager.selectedMode == "Defense") ? defenseRoomAnchor : normalRoomAnchor;
+
+        if (targetAnchor != null)
+        {
+            // Bê nguyên cái Canvas này đặt vào tọa độ và góc xoay của điểm neo
+            transform.position = targetAnchor.position;
+        }
+    }
+
     public void StartQuestionSession(List<string> questions)
     {
         if (questions == null || questions.Count == 0) return;
@@ -56,12 +79,15 @@ public class QuestionDialogManager : MonoBehaviour
         currentQuestionList = questions;
         currentQuestionIndex = 0;
 
+        RepositionUIToCurrentRoom(); // Dịch chuyển UI trước khi bật lên
         TriggerFadeUI(1f);
         DisplayCurrentQuestion();
     }
 
     private void DisplayCurrentQuestion()
     {
+        isRecordingPhase = false; // Reset cờ ghi âm
+
         if (npcManager != null) npcManager.GetNextNPC();
 
         string currentQ = currentQuestionList[currentQuestionIndex];
@@ -84,11 +110,17 @@ public class QuestionDialogManager : MonoBehaviour
 
     public void NextQuestion()
     {
+        // CHỈ LƯU FILE NẾU ĐÃ QUA THỜI GIAN ĐẾM NGƯỢC
+        if (isRecordingPhase)
+        {
+            if (pauseMenuManager != null) pauseMenuManager.SaveRecordingQuestionToFile(currentQuestionIndex);
+        }
+
         currentQuestionIndex++;
-        if (pauseMenuManager != null) pauseMenuManager.SaveRecordingQuestionToFile(currentQuestionIndex);
 
         if (currentQuestionIndex < currentQuestionList.Count)
         {
+            RepositionUIToCurrentRoom(); // Chắc cú đặt lại vị trí
             TriggerFadeUI(1f);
             DisplayCurrentQuestion();
         }
@@ -120,6 +152,8 @@ public class QuestionDialogManager : MonoBehaviour
             statusTextUI.color = Color.green;
         }
 
+        isRecordingPhase = true; // Bật cờ cho phép lưu file
+
         yield return new WaitForSeconds(2f);
         if (pauseMenuManager != null) pauseMenuManager.TurnOnMic();
 
@@ -129,19 +163,14 @@ public class QuestionDialogManager : MonoBehaviour
     public void EndSession()
     {
         HideDialog();
-        pauseMenuManager.EndQaAPhase();
-
+        if (pauseMenuManager != null) pauseMenuManager.EndQaAPhase();
     }
 
     public void HideDialog() => TriggerFadeUI(0f);
 
-    // Hàm Wrapper để quản lý an toàn Coroutine Fade
     private void TriggerFadeUI(float targetAlpha)
     {
-        if (currentFadeRoutine != null)
-        {
-            StopCoroutine(currentFadeRoutine);
-        }
+        if (currentFadeRoutine != null) StopCoroutine(currentFadeRoutine);
         currentFadeRoutine = StartCoroutine(FadeUI(targetAlpha));
     }
 
@@ -150,7 +179,6 @@ public class QuestionDialogManager : MonoBehaviour
         float startAlpha = canvasGroup.alpha;
         float time = 0;
 
-        // Bật interactable nếu đang hiện lên
         if (targetAlpha > 0)
         {
             canvasGroup.interactable = true;
@@ -165,7 +193,6 @@ public class QuestionDialogManager : MonoBehaviour
         }
         canvasGroup.alpha = targetAlpha;
 
-        // Tắt interactable nếu đã ẩn đi hoàn toàn
         if (targetAlpha == 0)
         {
             canvasGroup.interactable = false;
@@ -185,6 +212,7 @@ public class QuestionDialogManager : MonoBehaviour
 
         if (currentTimerRoutine != null) StopCoroutine(currentTimerRoutine);
 
+        RepositionUIToCurrentRoom(); // Dịch chuyển UI trước khi bật
         TriggerFadeUI(1f);
     }
 
@@ -201,7 +229,8 @@ public class QuestionDialogManager : MonoBehaviour
         if (currentTimerRoutine != null) StopCoroutine(currentTimerRoutine);
         currentTimerRoutine = StartCoroutine(AutoCloseError());
 
-        TriggerFadeUI(1f); // Đảm bảo bảng đang mở để hiển thị lỗi
+        TriggerFadeUI(1f);
+        RepositionUIToCurrentRoom(); // Dịch chuyển UI trước khi bật
     }
 
     private IEnumerator AutoCloseError()
