@@ -249,7 +249,7 @@ public class PauseMenuManager : MonoBehaviour
     {
         SaveRecordingToFile();
         SendAudioForQuestion();
-        
+
         gazeTracker.StopAndExportTracking();
         timerText.text = "The system is currently recording the answer to this question";
         titleText.text = "Q&A Session";
@@ -321,4 +321,40 @@ public class PauseMenuManager : MonoBehaviour
         }
     }
 
+    public void StartReportPhase()
+    {
+        titleText.text = "General Report";
+        titleBackground.color = new Color(0f, 0f, 0f, 0f);
+    }
+
+    public void RetakePresentation()
+    {
+        // 1. Reset UI back to normal
+        timerText.text = "The system is currently recording your presentation";
+        titleText.text = "Presentation Session";
+        titleBackground.color = new Color32(113, 194, 236, 255);
+
+        // 2. Stop current recording & clear old audio
+        TurnOffMic();
+        allAudioChunks.Clear();
+        if (tempRecordingClip != null)
+        {
+            Destroy(tempRecordingClip);
+            tempRecordingClip = null;
+        }
+
+        // 3. Reset timer and gaze tracking
+        if (presentationTimer != null) presentationTimer.ForceResetTimer();
+        if (gazeTracker != null) gazeTracker.StopAndExportTracking();
+
+        presentationTimer.StartPresentationTimer();
+
+        // 4. Restart everything fresh
+        if (presentationTimer != null) presentationTimer.ResumeTimer(); // or your start method
+        if (gazeTracker != null) gazeTracker.ResumeTracking();
+        TurnOnMic();
+
+        isPaused = false;
+        Debug.Log("Retake started — everything reset to normal.");
+    }
 }
