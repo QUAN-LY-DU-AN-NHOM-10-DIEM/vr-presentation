@@ -10,9 +10,9 @@ using UnityEngine.Networking;
 [System.Serializable]
 public class GenerateQuestionResponse
 {
-    public string question;
+    // Đổi từ string question sang mảng hoặc List
+    public List<string> questions;
 }
-
 public class PauseMenuManager : MonoBehaviour
 {
     [Header("Menu Setup")]
@@ -48,9 +48,14 @@ public class PauseMenuManager : MonoBehaviour
     public GazeTrackingManager gazeTracker;
     public PresentationTimer presentationTimer;
 
-    [Header("API Config")]
-    public string generateQuestionUrl = "https://your-ngrok-url.ngrok-free.app/api/v1/generate-question";
+    [Header("API Configuration")]
+    [Tooltip("Nhập URL ngrok của bạn vào đây (Không có dấu gạch chéo ở cuối)")]
+    public string backendBaseUrl = "https://your-ngrok-url.ngrok-free.app/api/v1";
     public string mode = "practice";
+
+
+    // Thêm biến này để chặn người dùng bấm nhiều lần
+    private bool isUploading = false;
 
     private void Start()
     {
@@ -141,6 +146,31 @@ public class PauseMenuManager : MonoBehaviour
         {
             string timeStamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string fileName = "VR_Presentation_" + timeStamp + ".wav";
+
+            string savedPath = WavUtility.Save(fileName, finalClip);
+
+            SessionManager.WavPath = savedPath;
+
+            Debug.Log("Audio File Saved Successfully at: " + savedPath);
+            // [TỐI ƯU RAM] - Hủy file tổng sau khi đã xuất ra file .wav thành công!
+            Destroy(finalClip);
+            allAudioChunks.Clear();
+        }
+        else
+        {
+            Debug.Log("⚠️ No audio to save!");
+        }
+    }
+
+    public void SaveRecordingQuestionToFile(int index)
+    {
+        // Nếu họ đang thu mà bấm Save luôn, ép nó tự động Pause để lấy đoạn cuối
+        TurnOffMic();
+        AudioClip finalClip = CreateFinalStitchedClip();
+
+        if (finalClip != null)
+        {
+            string fileName = "Question_" + index + ".wav";
 
             string savedPath = WavUtility.Save(fileName, finalClip);
 
@@ -254,33 +284,177 @@ public class PauseMenuManager : MonoBehaviour
         timerText.text = "The system is currently recording the answer to this question";
         titleText.text = "Q&A Session";
         titleBackground.color = new Color32(252, 129, 131, 255);
-        presentationTimer.StartQnATimer();
-        TurnOnMic();
+    }
+
+    public void EndQaAPhase()
+    {
+        if (isUploading) return;
+        isUploading = true;
+
+        if (QuestionDialogManager.Instance != null)
+        {
+            QuestionDialogManager.Instance.ShowLoadingState("Đang nộp toàn bộ câu trả lời...\nVui lòng đợi hệ thống xử lý!");
+        }
+
+        string sessionId = SessionManager.SessionId;
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            Debug.LogError("❌ Chưa có session_id để nộp bài!");
+            if (QuestionDialogManager.Instance != null) QuestionDialogManager.Instance.ShowErrorState("Lỗi: Không tìm thấy phiên làm việc!");
+            isUploading = false;
+            return;
+        }
+
+        // Gom các file Question_X.wav
+        List<string> filesToUpload = new List<string>();
+        string saveDirectory = Application.persistentDataPath;
+
+        for (int i = 0; i < 10; i++)
+        {
+            string filePath = Path.Combine(saveDirectory, $"Question_{i}.wav");
+            if (File.Exists(filePath)) filesToUpload.Add(filePath);
+        }
+
+        if (filesToUpload.Count == 0)
+        {
+            Debug.LogWarning("⚠️ Không tìm thấy file âm thanh câu trả lời nào!");
+            // Nếu không có câu trả lời nào, có thể nhảy thẳng tới chấm điểm bài thuyết trình luôn
+            StartCoroutine(EvaluateCoroutine(sessionId));
+            return;
+        }
+
+        Debug.Log($"📦 Bắt đầu gửi {filesToUpload.Count} câu trả lời...");
+
+        // Kích hoạt mắt xích đầu tiên
+        StartCoroutine(SubmitBatchAudioCoroutine(sessionId, filesToUpload));
+    }
+
+    // ==========================================
+    // 2. MẮT XÍCH 1: GỬI HÀNG LOẠT FILE AUDIO
+    // ==========================================
+    private IEnumerator SubmitBatchAudioCoroutine(string sessionId, List<string> filePaths)
+    {
+        string urlWithParams = $"{backendBaseUrl}/submit?session_id={UnityWebRequest.EscapeURL(sessionId)}";
+        List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
+
+        foreach (string path in filePaths)
+        {
+            byte[] fileData = File.ReadAllBytes(path);
+            formData.Add(new MultipartFormFileSection("audio_files", fileData, Path.GetFileName(path), "audio/wav"));
+        }
+
+        using (UnityWebRequest request = UnityWebRequest.Post(urlWithParams, formData))
+        {
+            request.SetRequestHeader("ngrok-skip-browser-warning", "69420");
+            request.timeout = 300;
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log($"✅ NỘP AUDIO THÀNH CÔNG. Chuẩn bị chấm điểm...");
+                if (QuestionDialogManager.Instance != null)
+                {
+                    QuestionDialogManager.Instance.ShowLoadingState("Đã nhận bài!\nAI đang phân tích và chấm điểm toàn diện...\n(Quá trình này có thể mất 1-2 phút)");
+                }
+
+                // TỰ ĐỘNG GỌI MẮT XÍCH THỨ 2
+                StartCoroutine(EvaluateCoroutine(sessionId));
+            }
+            else
+            {
+                isUploading = false;
+                Debug.LogError($"❌ Lỗi nộp bài: {request.error}");
+                if (QuestionDialogManager.Instance != null) QuestionDialogManager.Instance.ShowErrorState("Nộp bài thất bại. Vui lòng thử lại!");
+            }
+        }
+    }
+
+    // ==========================================
+    // 3. MẮT XÍCH 2: GỌI CHẤM ĐIỂM & LƯU KẾT QUẢ
+    // ==========================================
+    private IEnumerator EvaluateCoroutine(string sessionId)
+    {
+        string urlWithParams = $"{backendBaseUrl}/evaluate?session_id={UnityWebRequest.EscapeURL(sessionId)}";
+
+        using (UnityWebRequest request = UnityWebRequest.Get(urlWithParams))
+        {
+            request.SetRequestHeader("ngrok-skip-browser-warning", "69420");
+            request.timeout = 600;
+
+            yield return request.SendWebRequest();
+            isUploading = false; // Mở khóa hệ thống
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                string jsonResult = request.downloadHandler.text;
+                Debug.Log($"✅ ĐÁNH GIÁ THÀNH CÔNG!");
+
+                // Lưu file
+                SaveEvaluationToFile(sessionId, jsonResult);
+
+                if (QuestionDialogManager.Instance != null) QuestionDialogManager.Instance.HideDialog();
+
+                // HOÀN TẤT DÂY CHUYỀN -> GỌI MÀN HÌNH REPORT
+                StartReportPhase();
+            }
+            else
+            {
+                Debug.LogError($"❌ Lỗi chấm điểm: {request.error}");
+                if (QuestionDialogManager.Instance != null) QuestionDialogManager.Instance.ShowErrorState("Server AI báo lỗi khi chấm điểm!");
+            }
+        }
+    }
+
+    // ==========================================
+    // 4. HÀM PHỤ TRỢ: LƯU JSON VÀO MÁY
+    // ==========================================
+    private void SaveEvaluationToFile(string sessionId, string jsonData)
+    {
+        try
+        {
+            string safeSessionId = string.Join("_", sessionId.Split(Path.GetInvalidFileNameChars()));
+            string filePath = Path.Combine(Application.persistentDataPath, $"EvaluationReport_{safeSessionId}.json");
+            File.WriteAllText(filePath, jsonData);
+            Debug.Log($"📄 Đã lưu file kết quả tại: {filePath}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"❌ Lỗi khi ghi file kết quả: {e.Message}");
+        }
     }
 
     public void SendAudioForQuestion()
     {
-        // 1. Save wav to disk and get the path
-        // string wavPath = SaveRecordingToFile();
-        string wavPath = SessionManager.WavPath;
+        // Nếu đang gửi rồi thì chặn luôn không cho chạy tiếp
+        if (isUploading)
+        {
+            Debug.Log("⏳ Đang xử lý, vui lòng đợi...");
+            return;
+        }
 
+        // 1. BẬT KHÓA VÀ HIỆN BẢNG LOADING LÊN VR
+        isUploading = true;
+        if (QuestionDialogManager.Instance != null)
+        {
+            QuestionDialogManager.Instance.ShowLoadingState("AI đang phân tích bài thuyết trình...\nVui lòng đợi trong giây lát!");
+        }
+
+        string wavPath = SessionManager.WavPath;
         if (string.IsNullOrEmpty(wavPath))
         {
             Debug.LogError("❌ Không có file wav để gửi!");
             return;
         }
 
-        // 2. Get session_id from static SessionManager
         string sessionId = SessionManager.SessionId;
-
         if (string.IsNullOrEmpty(sessionId))
         {
             Debug.LogError("❌ Chưa có session_id! Upload context trước.");
             return;
         }
 
-        // 3. Start upload coroutine
-        StartCoroutine(UploadAudioCoroutine(wavPath, sessionId, mode));
+        StartCoroutine(UploadAudioCoroutine(wavPath, sessionId, mode)); // Bạn nhớ truyền biến mode vào nhé
     }
 
     private IEnumerator UploadAudioCoroutine(string wavPath, string sessionId, string uploadMode)
@@ -293,17 +467,20 @@ public class PauseMenuManager : MonoBehaviour
         WWWForm form = new WWWForm();
         form.AddBinaryData("audio_file", wavBytes, fileName, "audio/wav");
 
-        string urlWithParams = $"{generateQuestionUrl}" +
+        string urlWithParams = $"{backendBaseUrl}/generate-question" +
             $"?session_id={UnityWebRequest.EscapeURL(sessionId)}" +
             $"&mode={UnityWebRequest.EscapeURL(uploadMode)}";
 
         using (UnityWebRequest request = UnityWebRequest.Post(urlWithParams, form))
         {
             request.SetRequestHeader("ngrok-skip-browser-warning", "69420");
-            request.certificateHandler = new BypassCertificate();
-            request.timeout = 180; // 3 phút cho AI xử lý
+            // request.certificateHandler = new BypassCertificate(); // Mở comment này nếu bạn đang dùng
+            request.timeout = 180;
 
             yield return request.SendWebRequest();
+
+            // 2. MỞ KHÓA KHI API TRẢ VỀ KẾT QUẢ
+            isUploading = false;
 
             if (request.result == UnityWebRequest.Result.Success)
             {
@@ -311,12 +488,21 @@ public class PauseMenuManager : MonoBehaviour
                 Debug.Log($"✅ THÀNH CÔNG: {jsonResult}");
 
                 GenerateQuestionResponse response = JsonUtility.FromJson<GenerateQuestionResponse>(jsonResult);
-                Debug.Log($"Câu hỏi: {response.question}");
+
+                // Khi có câu hỏi, bảng Dialog sẽ tự động đè giao diện Loading bằng danh sách câu hỏi
+                if (QuestionDialogManager.Instance != null && response.questions != null)
+                {
+                    QuestionDialogManager.Instance.StartQuestionSession(response.questions);
+                }
             }
             else
             {
+                // XỬ LÝ KHI BỊ LỖI
                 Debug.LogError($"❌ Lỗi: {request.error}");
-                Debug.LogError($"Response: {request.downloadHandler.text}");
+                if (QuestionDialogManager.Instance != null)
+                {
+                    QuestionDialogManager.Instance.ShowErrorState("Lỗi kết nối tới AI. Vui lòng thử lại!");
+                }
             }
         }
     }
@@ -334,7 +520,7 @@ public class PauseMenuManager : MonoBehaviour
         titleText.text = "Presentation Session";
         titleBackground.color = new Color32(113, 194, 236, 255);
 
-        // 2. Stop current recording & clear old audio
+        // 2. Stop current recording & clear old audio in RAM
         TurnOffMic();
         allAudioChunks.Clear();
         if (tempRecordingClip != null)
@@ -343,6 +529,26 @@ public class PauseMenuManager : MonoBehaviour
             tempRecordingClip = null;
         }
 
+        // ==========================================
+        // THÊM MỚI: XÓA SẠCH FILE QUESTION*.WAV TRÊN Ổ CỨNG
+        // ==========================================
+        try
+        {
+            string saveDirectory = Application.persistentDataPath;
+            string[] oldQuestionFiles = Directory.GetFiles(saveDirectory, "Question_*.wav");
+
+            foreach (string filePath in oldQuestionFiles)
+            {
+                File.Delete(filePath);
+            }
+            Debug.Log($"🗑️ Đã xóa sạch {oldQuestionFiles.Length} file Question.wav cũ!");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"❌ Lỗi khi xóa file cũ: {e.Message}");
+        }
+        // ==========================================
+
         // 3. Reset timer and gaze tracking
         if (presentationTimer != null) presentationTimer.ForceResetTimer();
         if (gazeTracker != null) gazeTracker.StopAndExportTracking();
@@ -350,7 +556,7 @@ public class PauseMenuManager : MonoBehaviour
         presentationTimer.StartPresentationTimer();
 
         // 4. Restart everything fresh
-        if (presentationTimer != null) presentationTimer.ResumeTimer(); // or your start method
+        if (presentationTimer != null) presentationTimer.ResumeTimer();
         if (gazeTracker != null) gazeTracker.ResumeTracking();
         TurnOnMic();
 
