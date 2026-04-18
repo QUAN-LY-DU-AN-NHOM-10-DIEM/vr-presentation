@@ -1,8 +1,17 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using TMPro;
 using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Networking;
+
+[System.Serializable]
+public class GenerateQuestionResponse
+{
+    public string question;
+}
 
 public class PauseMenuManager : MonoBehaviour
 {
@@ -16,7 +25,7 @@ public class PauseMenuManager : MonoBehaviour
     public TextMeshProUGUI titleText;  // Kéo object chứa chữ vào đây
     public Image titleBackground;
     public TextMeshProUGUI timerText;
-    [HideInInspector] 
+    [HideInInspector]
     public bool isPaused = false;
 
     [Header("Navigation")]
@@ -28,7 +37,7 @@ public class PauseMenuManager : MonoBehaviour
     public Vector3 menuRotationOffset = new Vector3(0f, -180f, -90f);    // Nghiêng 45 độ để dễ nhìn
 
     // Mic Info
-    [HideInInspector] 
+    [HideInInspector]
     public string hardwareMicName;
     private bool isRecording = false;
     private AudioClip tempRecordingClip; // File ghi âm tạm thời cho mỗi lần bấm
@@ -39,9 +48,14 @@ public class PauseMenuManager : MonoBehaviour
     public GazeTrackingManager gazeTracker;
     public PresentationTimer presentationTimer;
 
+    [Header("API Config")]
+    public string generateQuestionUrl = "https://your-ngrok-url.ngrok-free.app/api/v1/generate-question";
+    public string mode = "practice";
+
     private void Start()
     {
-        if (playerLeftHand != null && pauseCanvas != null) {
+        if (playerLeftHand != null && pauseCanvas != null)
+        {
             // 1. Biến Canvas thành con của Bàn tay trái
             pauseCanvas.transform.SetParent(playerLeftHand.transform);
             // 2. Chỉnh vị trí lệch (Local Position) so với bàn tay
@@ -129,6 +143,8 @@ public class PauseMenuManager : MonoBehaviour
             string fileName = "VR_Presentation_" + timeStamp + ".wav";
 
             string savedPath = WavUtility.Save(fileName, finalClip);
+
+            SessionManager.WavPath = savedPath;
 
             Debug.Log("Audio File Saved Successfully at: " + savedPath);
             // [TỐI ƯU RAM] - Hủy file tổng sau khi đã xuất ra file .wav thành công!
@@ -232,6 +248,8 @@ public class PauseMenuManager : MonoBehaviour
     public void StartQaAPhase()
     {
         SaveRecordingToFile();
+        SendAudioForQuestion();
+        
         gazeTracker.StopAndExportTracking();
         timerText.text = "The system is currently recording the answer to this question";
         titleText.text = "Q&A Session";
@@ -239,4 +257,68 @@ public class PauseMenuManager : MonoBehaviour
         presentationTimer.StartQnATimer();
         TurnOnMic();
     }
+
+    public void SendAudioForQuestion()
+    {
+        // 1. Save wav to disk and get the path
+        // string wavPath = SaveRecordingToFile();
+        string wavPath = SessionManager.WavPath;
+
+        if (string.IsNullOrEmpty(wavPath))
+        {
+            Debug.LogError("❌ Không có file wav để gửi!");
+            return;
+        }
+
+        // 2. Get session_id from static SessionManager
+        string sessionId = SessionManager.SessionId;
+
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            Debug.LogError("❌ Chưa có session_id! Upload context trước.");
+            return;
+        }
+
+        // 3. Start upload coroutine
+        StartCoroutine(UploadAudioCoroutine(wavPath, sessionId, mode));
+    }
+
+    private IEnumerator UploadAudioCoroutine(string wavPath, string sessionId, string uploadMode)
+    {
+        Debug.Log($"📤 Đang gửi audio... Session: {sessionId}, Mode: {uploadMode}");
+
+        byte[] wavBytes = File.ReadAllBytes(wavPath);
+        string fileName = Path.GetFileName(wavPath);
+
+        WWWForm form = new WWWForm();
+        form.AddBinaryData("audio_file", wavBytes, fileName, "audio/wav");
+
+        string urlWithParams = $"{generateQuestionUrl}" +
+            $"?session_id={UnityWebRequest.EscapeURL(sessionId)}" +
+            $"&mode={UnityWebRequest.EscapeURL(uploadMode)}";
+
+        using (UnityWebRequest request = UnityWebRequest.Post(urlWithParams, form))
+        {
+            request.SetRequestHeader("ngrok-skip-browser-warning", "69420");
+            request.certificateHandler = new BypassCertificate();
+            request.timeout = 180; // 3 phút cho AI xử lý
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                string jsonResult = request.downloadHandler.text;
+                Debug.Log($"✅ THÀNH CÔNG: {jsonResult}");
+
+                GenerateQuestionResponse response = JsonUtility.FromJson<GenerateQuestionResponse>(jsonResult);
+                Debug.Log($"Câu hỏi: {response.question}");
+            }
+            else
+            {
+                Debug.LogError($"❌ Lỗi: {request.error}");
+                Debug.LogError($"Response: {request.downloadHandler.text}");
+            }
+        }
+    }
+
 }
