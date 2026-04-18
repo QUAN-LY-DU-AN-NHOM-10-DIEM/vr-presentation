@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Networking;
 using UnityPdfViewer;
+using Assets.CustomPdfViewer.Scripts;
 
 [System.Serializable]
 public class GenerateQuestionResponse
@@ -19,8 +20,8 @@ public class PauseMenuManager : MonoBehaviour
     [Header("Menu Setup")]
     public GameObject pauseCanvas;
     public ModeManager modeManager;
-    public PdfViewerUI pdf1;
-    public PdfViewerUI pdf2;
+    public CustomPdfViewerUI pdf1;
+    public CustomPdfViewerUI pdf2;
     public InputActionReference menuButtonInput;
     public GameObject micOnImage;
     public GameObject micOffImage;

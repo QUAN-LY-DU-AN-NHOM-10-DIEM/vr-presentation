@@ -32812,6 +32812,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   pauseCanvas: {fileID: 1936999994}
   modeManager: {fileID: 2118384658}
+  pdf1: {fileID: 439457283}
+  pdf2: {fileID: 119654530}
   menuButtonInput: {fileID: 3255699453802992142, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   micOnImage: {fileID: 2088628083}
   micOffImage: {fileID: 2017053361}
