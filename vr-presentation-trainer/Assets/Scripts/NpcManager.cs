@@ -39,51 +39,54 @@ public class NpcManager : MonoBehaviour
         }
 
         isActive = true;
-        Debug.Log($"Queue ready! Press Space to call NPCs. ({npcQueue.Count} remaining)");
+        Debug.Log($"Queue ready! ({npcQueue.Count} NPCs remaining)");
     }
 
     private void Update()
     {
         if (!isActive) return;
 
+        // Giữ lại phím Space để bạn dễ test thủ công trong Editor
         if (Keyboard.current.spaceKey.wasPressedThisFrame)
         {
-            // NPC trước đó ngồi xuống
-            if (currentNPC != null)
-            {
-                Animator prevAnimator = currentNPC.GetComponent<Animator>();
-                if (prevAnimator != null)
-                {
-                    prevAnimator.SetTrigger("SitDown");
-                }
-                Debug.Log($"{currentNPC.name} sat down.");
-            }
-
-            // Lấy NPC tiếp theo đứng dậy
-            currentNPC = GetNextNPC();
-            if (currentNPC != null)
-            {
-                Animator animator = currentNPC.GetComponent<Animator>();
-                if (animator != null)
-                {
-                    animator.SetTrigger("StandUp");
-                }
-                Debug.Log($"{currentNPC.name} stood up! ({npcQueue.Count} remaining)");
-            }
-            else
-            {
-                // Hết queue
-                isActive = false;
-                currentNPC = null;
-                Debug.Log("All NPCs are done!");
-            }
+            GetNextNPC();
         }
     }
 
+    // Đã gom toàn bộ logic Animation vào hàm này
     public Transform GetNextNPC()
     {
+        // 1. Nếu có NPC đang đứng trước đó, bắt nó ngồi xuống
+        if (currentNPC != null)
+        {
+            Animator prevAnimator = currentNPC.GetComponent<Animator>();
+            if (prevAnimator != null)
+            {
+                prevAnimator.SetTrigger("SitDown");
+                Debug.Log($"{currentNPC.name} sat down.");
+            }
+        }
+
+        // 2. Lấy NPC tiếp theo từ hàng đợi
         if (npcQueue.Count > 0)
-            return npcQueue.Dequeue();
+        {
+            currentNPC = npcQueue.Dequeue();
+
+            // 3. Cho NPC mới đứng lên
+            Animator animator = currentNPC.GetComponent<Animator>();
+            if (animator != null)
+            {
+                animator.SetTrigger("StandUp");
+                Debug.Log($"{currentNPC.name} stood up! ({npcQueue.Count} remaining)");
+            }
+
+            return currentNPC;
+        }
+
+        // 4. Nếu hàng đợi đã trống
+        isActive = false;
+        currentNPC = null;
+        Debug.Log("All NPCs are done!");
 
         return null;
     }

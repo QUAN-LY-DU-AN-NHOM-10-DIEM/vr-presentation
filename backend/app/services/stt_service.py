@@ -106,13 +106,16 @@ def _read_audio_with_av(audio_filename: str) -> tuple:
 
 def _transcribe(audio_filename: str) -> str:
     samples, sample_rate = _read_audio_generic(audio_filename)
+    print(f"Audio: {len(samples)} samples, rate: {sample_rate}")
 
     recognizer = _get_recognizer()
     stream = recognizer.create_stream()
     stream.accept_waveform(sample_rate, samples)
     recognizer.decode_stream(stream)
 
-    return stream.result.text.strip()
+    text = stream.result.text
+    print(f"Raw transcript: '{text}'")
+    return text.strip()
 
 
 async def transcribe_audio(audio_file: UploadFile) -> str:
