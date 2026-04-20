@@ -9721,7 +9721,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8135023674665499069, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8518324294302271954, guid: 58d0a4ac86f2348deb02f3880c71378e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -23518,7 +23518,7 @@ MonoBehaviour:
   loadingPanel: {fileID: 1307606374}
   analyzeButton: {fileID: 1704750881}
   loadingText: {fileID: 1369025639}
-  backendUrl: https://a7b1-2001-ee0-d74a-61f0-7c73-497e-4f00-690e.ngrok-free.app/api/v1/upload-context
+  backendUrl: https://1cdf-14-241-225-125.ngrok-free.app/api/v1/upload-context
   selectedPdfPath: 
 --- !u!114 &1108964647
 MonoBehaviour:
@@ -32830,7 +32830,7 @@ MonoBehaviour:
   hardwareMicName: 
   gazeTracker: {fileID: 1018752937}
   presentationTimer: {fileID: 1108964647}
-  backendBaseUrl: https://a7b1-2001-ee0-d74a-61f0-7c73-497e-4f00-690e.ngrok-free.app/api/v1
+  backendBaseUrl: https://1cdf-14-241-225-125.ngrok-free.app/api/v1
   mode: practice
 --- !u!1 &1614484477
 GameObject:
