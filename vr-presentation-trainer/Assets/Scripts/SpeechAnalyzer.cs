@@ -1,5 +1,9 @@
-using UnityEngine;
 using System.IO;
+using UnityEngine;
+using UnityEngine.Events;
+
+[System.Serializable]
+public class WarningEvent : UnityEvent<string, Color> { }
 
 public class SpeechAnalyzer : MonoBehaviour
 {
@@ -18,6 +22,14 @@ public class SpeechAnalyzer : MonoBehaviour
     [Header("AC4 - Scoring Thresholds")]
     public float tooQuietLimit = 20f; // < 20dB
     public float tooLoudLimit = 75f;  // > 75dB
+
+    [Header("Live Warnings")]
+    public float warningBufferTime = 1.5f; // Phải nói to/nhỏ liên tục 1.5s mới báo động
+    public WarningEvent onLiveWarning;     // Gửi chữ và màu sắc ra ngoài UI
+    public UnityEvent onWarningCleared;    // Tắt cảnh báo khi âm lượng tốt lại
+
+    private float badVolumeTimer = 0f;
+    private string currentWarningState = "Good";
 
     // --- State Tracking ---
     private bool isAnalyzing = false;
@@ -107,6 +119,27 @@ public class SpeechAnalyzer : MonoBehaviour
         else if (dbValue > tooLoudLimit) timeTooLoud += analyzeInterval;
         else timeGood += analyzeInterval;
 
+        // 4. LIVE WARNING LOGIC (THÊM PHẦN NÀY VÀO TRƯỚC PHẦN KHOẢNG LẶNG)
+        if (dbValue > tooLoudLimit)
+        {
+            HandleLiveWarning("TooLoud", "Bạn đang nói quá TO!", Color.red);
+        }
+        else if (dbValue < tooQuietLimit && dbValue > silenceDbThreshold)
+        {
+            // Lưu ý: Chỉ báo "Too Quiet" nếu họ ĐANG NÓI (lớn hơn ngưỡng im lặng)
+            HandleLiveWarning("TooQuiet", "Bạn đang nói quá NHỎ!", new Color32(100, 200, 255, 255)); // Màu xanh dương
+        }
+        else if (dbValue >= tooQuietLimit && dbValue <= tooLoudLimit)
+        {
+            // Âm lượng hoàn hảo -> Xóa cảnh báo
+            if (currentWarningState != "Good")
+            {
+                currentWarningState = "Good";
+                badVolumeTimer = 0f;
+                onWarningCleared?.Invoke(); // Tắt UI
+            }
+        }
+
         // 4. Phát hiện Khoảng lặng (Thinking Pause)
         if (dbValue < silenceDbThreshold)
         {
@@ -192,6 +225,26 @@ public class SpeechAnalyzer : MonoBehaviour
         {
             isAnalyzing = true;
             Debug.Log("▶️ [Speech Analyzer] Tiếp tục phân tích.");
+        }
+    }
+
+    private void HandleLiveWarning(string stateName, string message, Color warningColor)
+    {
+        if (currentWarningState == stateName)
+        {
+            // Tích lũy thời gian nếu họ tiếp tục nói sai
+            badVolumeTimer += analyzeInterval;
+            if (badVolumeTimer >= warningBufferTime)
+            {
+                onLiveWarning?.Invoke(message, warningColor);
+                badVolumeTimer = 0f; // Reset để không spam event liên tục
+            }
+        }
+        else
+        {
+            // Vừa mới đổi trạng thái (Từ Good sang TooLoud chẳng hạn)
+            currentWarningState = stateName;
+            badVolumeTimer = 0f;
         }
     }
 }

@@ -564,15 +564,14 @@ public class PauseMenuManager : MonoBehaviour
         // ==========================================
 
         // 3. Reset timer and gaze tracking
-        if (presentationTimer != null) presentationTimer.ForceResetTimer();
         if (gazeTracker != null) gazeTracker.StopAndExportTracking();
-
         presentationTimer.StartPresentationTimer();
 
         // 4. Restart everything fresh
         if (presentationTimer != null) presentationTimer.ResumeTimer();
         if (gazeTracker != null) gazeTracker.ResumeTracking();
         TurnOnMic();
+        speechAnalyzer.StartAnalysis(hardwareMicName, tempRecordingClip);
 
         isPaused = false;
         Debug.Log("Retake started — everything reset to normal.");
