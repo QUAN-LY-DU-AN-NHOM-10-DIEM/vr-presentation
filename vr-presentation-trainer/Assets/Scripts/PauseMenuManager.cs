@@ -52,6 +52,7 @@ public class PauseMenuManager : MonoBehaviour
     [Header("External References")]
     public GazeTrackingManager gazeTracker;
     public PresentationTimer presentationTimer;
+    public TimePicker timePicker;
 
     [Header("API Configuration")]
     [Tooltip("Nhập URL ngrok của bạn vào đây (Không có dấu gạch chéo ở cuối)")]
@@ -523,6 +524,8 @@ public class PauseMenuManager : MonoBehaviour
     {
         titleText.text = "General Report";
         titleBackground.color = new Color(0f, 0f, 0f, 0f);
+
+        presentationTimer.CalculatePresentationScore();
     }
 
     public void RetakePresentation()
@@ -565,7 +568,9 @@ public class PauseMenuManager : MonoBehaviour
 
         // 3. Reset timer and gaze tracking
         if (gazeTracker != null) gazeTracker.StopAndExportTracking();
-        presentationTimer.StartPresentationTimer();
+
+        float timeInSecond = (timePicker != null) ? timePicker.GetTimeInSeconds() : 0f;
+        presentationTimer.StartPresentationTimer(timeInSecond);
 
         // 4. Restart everything fresh
         if (presentationTimer != null) presentationTimer.ResumeTimer();

@@ -1,6 +1,20 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using System.IO;
+
+[System.Serializable]
+public class PresentationScoreData
+{
+    public string exportTime;
+    public float targetDurationSeconds;
+    public string targetDurationFormatted;
+    public float actualDurationSeconds;
+    public string actualDurationFormatted;
+    public float deviationSeconds;
+    public int score;
+    public int maxScore = 100;
+}
 
 public class PresentationTimer : MonoBehaviour
 {
@@ -15,7 +29,7 @@ public class PresentationTimer : MonoBehaviour
     [Header("Hiển thị UI (Hỗ trợ nhiều màn hình)")]
     public TMP_Text[] timerTexts3D;
 
-    [Header("Sự kiện khi hết giờ")] 
+    [Header("Sự kiện khi hết giờ")]
     public UnityEvent onPresentationTimeUp;   // Sẽ kích hoạt nếu hết giờ Thuyết trình
     public UnityEvent onQnATimeUp;            // Sẽ kích hoạt nếu hết giờ Q&A
 
@@ -25,6 +39,19 @@ public class PresentationTimer : MonoBehaviour
     private float currentDurationLimit; // Biến lưu lại xem đang dùng mốc thời gian nào
     private bool isTimerRunning = false;
     private int lastUpdatedSecond = -1;
+
+    [Header("Score Settings")]
+    [Tooltip("Vùng an toàn ±X giây quanh target")]
+    public float bufferSeconds = 30f;
+
+    [Tooltip("Mỗi X giây lệch sẽ trừ điểm")]
+    public float penaltyInterval = 30f;
+
+    [Tooltip("Số điểm trừ mỗi bước")]
+    public int penaltyPoints = 5;
+
+    [HideInInspector] public int lastScore = 0;
+    [HideInInspector] public float lastDuration = 0f;
 
     void Update()
     {
@@ -89,9 +116,13 @@ public class PresentationTimer : MonoBehaviour
         Debug.Log("[Timer] Đã dọn dẹp và Reset sạch sẽ về 00:00:00");
     }
 
-    public void StartPresentationTimer()
+    public void StartPresentationTimer(float duration = 0f)
     {
         currentPhase = SessionPhase.Presentation;
+
+        if (duration > 0f)
+            presentationDuration = duration;
+
         currentDurationLimit = presentationDuration; // Áp dụng thời gian thuyết trình
         ForceResetTimer();
         isTimerRunning = true;
@@ -105,6 +136,88 @@ public class PresentationTimer : MonoBehaviour
         ForceResetTimer();
         isTimerRunning = true;
         Debug.Log("[Timer] BẮT ĐẦU Q&A.");
+    }
+
+    public void SetPresentationDuration(float duration)
+    {
+        if (duration <= 0f)
+        {
+            Debug.LogWarning($"[Timer] Duration không hợp lệ: {duration}s. Giữ nguyên giá trị cũ: {presentationDuration}s");
+            return;
+        }
+
+        presentationDuration = duration;
+        Debug.Log($"[Timer] Đã set Presentation Duration: {duration}s");
+    }
+
+    public void CalculatePresentationScore()
+    {
+        float actualDuration = (mode == TimerMode.CountUp) ? currentTime : (currentDurationLimit - currentTime);
+
+        lastDuration = actualDuration;
+
+        float deviation = Mathf.Abs(actualDuration - presentationDuration);
+
+        int score;
+
+        if (deviation <= bufferSeconds)
+        {
+            score = 100;
+        }
+        else
+        {
+            // Công thức: 100 - (Floor(excess / 30) + 1) * 5
+            float excess = deviation - bufferSeconds;
+            int penaltySteps = Mathf.FloorToInt(excess / penaltyInterval) + 1;
+            score = 100 - penaltySteps * penaltyPoints;
+            score = Mathf.Max(0, score); // Không cho điểm âm
+        }
+
+        lastScore = score;
+
+        int actualMin = Mathf.FloorToInt(actualDuration / 60f);
+        int actualSec = Mathf.FloorToInt(actualDuration % 60f);
+        int targetMin = Mathf.FloorToInt(presentationDuration / 60f);
+        int targetSec = Mathf.FloorToInt(presentationDuration % 60f);
+
+        Debug.Log($"[Score] Thực tế: {actualMin:00}:{actualSec:00} | Mục tiêu: {targetMin:00}:{targetSec:00} | Lệch: {deviation:F1}s | Điểm: {score}/100");
+
+        ExportScoreToJson();
+    }
+
+    private void ExportScoreToJson()
+    {
+        try
+        {
+            int actualMin = Mathf.FloorToInt(lastDuration / 60f);
+            int actualSec = Mathf.FloorToInt(lastDuration % 60f);
+            int targetMin = Mathf.FloorToInt(presentationDuration / 60f);
+            int targetSec = Mathf.FloorToInt(presentationDuration % 60f);
+
+            PresentationScoreData data = new PresentationScoreData
+            {
+                exportTime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                targetDurationSeconds = presentationDuration,
+                targetDurationFormatted = $"{targetMin:00}:{targetSec:00}",
+                actualDurationSeconds = lastDuration,
+                actualDurationFormatted = $"{actualMin:00}:{actualSec:00}",
+                deviationSeconds = Mathf.Abs(lastDuration - presentationDuration),
+                score = lastScore
+            };
+
+            string json = JsonUtility.ToJson(data, true);
+
+            string timestamp = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string fileName = $"TimeScore_{timestamp}.json";
+            string filePath = Path.Combine(Application.persistentDataPath, fileName);
+
+            File.WriteAllText(filePath, json);
+            Debug.Log($"📄 Đã lưu file điểm tại: {filePath}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"❌ Lỗi khi ghi file điểm: {e.Message}");
+        }
     }
 
     public void PauseTimer() => isTimerRunning = false;

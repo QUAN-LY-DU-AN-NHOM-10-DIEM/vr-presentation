@@ -33,6 +33,7 @@ public class PositionChanger : MonoBehaviour
 
     [Header("Timer")]
     public PresentationTimer presentationTimer;
+    public TimePicker timePicker;
 
     public void Start()
     {
@@ -98,7 +99,8 @@ public class PositionChanger : MonoBehaviour
 
             if (presentationTimer != null)
             {
-                presentationTimer.StartPresentationTimer();
+                float timeInSecond = (timePicker != null) ? timePicker.GetTimeInSeconds() : 0f;
+                presentationTimer.StartPresentationTimer(timeInSecond);
             }
             PauseMenu.SetActive(true);
             pauseManager.TurnOnMic();
