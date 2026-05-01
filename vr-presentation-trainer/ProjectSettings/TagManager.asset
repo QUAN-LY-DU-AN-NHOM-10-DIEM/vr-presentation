@@ -6,6 +6,7 @@ TagManager:
   tags:
   - NPC_Face
   - Slide_Screen
+  - Judge
   layers:
   - Default
   - TransparentFX

@@ -29,7 +29,9 @@ public class PositionChanger : MonoBehaviour
 
     [Header("UI & Display Settings")]
     public TextMeshProUGUI liveAdviceTextUInormal;
+    public GameObject liveAdviceCanvasNormal;
     public TextMeshProUGUI liveAdviceTextUIdefense;
+    public GameObject liveAdviceCanvasDefense;
 
     [Header("Timer")]
     public PresentationTimer presentationTimer;
@@ -75,7 +77,9 @@ public class PositionChanger : MonoBehaviour
                 if (gazeTracker != null)
                 {
                     gazeTracker.activeRoomParent = normalNPCGroup;
+                    gazeTracker.currentRoomType = GazeTrackingManager.RoomType.NormalClass;
                     gazeTracker.liveAdviceTextUI = liveAdviceTextUInormal; // Gán đúng UI cho từng phòng
+                    gazeTracker.liveAdviceCanvas = liveAdviceCanvasNormal; // Gán background cho phòng Normal
                     gazeTracker.StartTracking();
                 }
             }
@@ -92,7 +96,9 @@ public class PositionChanger : MonoBehaviour
                 if (gazeTracker != null)
                 {
                     gazeTracker.activeRoomParent = defenseNPCGroup;
+                    gazeTracker.currentRoomType = GazeTrackingManager.RoomType.DefenseRoom;
                     gazeTracker.liveAdviceTextUI = liveAdviceTextUIdefense; // Gán đúng UI cho từng phòng
+                    gazeTracker.liveAdviceCanvas = liveAdviceCanvasDefense; // Gán background cho phòng Defense
                     gazeTracker.StartTracking();
                 }
             }
