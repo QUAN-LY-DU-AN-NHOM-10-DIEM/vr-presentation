@@ -9504,8 +9504,11 @@ MonoBehaviour:
   normalNPCGroup: {fileID: 546941257}
   defenseNPCGroup: {fileID: 1949034327}
   liveAdviceTextUInormal: {fileID: 1936856837}
+  liveAdviceCanvasNormal: {fileID: 0}
   liveAdviceTextUIdefense: {fileID: 505177692}
+  liveAdviceCanvasDefense: {fileID: 0}
   presentationTimer: {fileID: 1108964647}
+  timePicker: {fileID: 0}
 --- !u!1 &406919726
 GameObject:
   m_ObjectHideFlags: 0
@@ -13158,7 +13161,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 0}
+  m_TargetGraphic: {fileID: 554596031}
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
@@ -21725,6 +21728,7 @@ MonoBehaviour:
   maxIgnoreTimeLimit: 180
   activeRoomParent: {fileID: 0}
   liveAdviceTextUI: {fileID: 0}
+  liveAdviceCanvas: {fileID: 0}
   customDisplayNames:
   - objectName: EyeTrackingTargetRB
     displayName: "Ph\u1EA3i Sau"
@@ -21734,6 +21738,12 @@ MonoBehaviour:
     displayName: "Tr\xE1i Tr\u01B0\u1EDBc"
   - objectName: EyeTrackingTargetLB
     displayName: "Tr\xE1i Sau"
+  totalPresentationTime: 0
+  interactionPercentage: 0
+  currentRoomType: 0
+  judgeLeftName: EyeTrackingTargetLeft
+  judgeMiddleName: EyeTrackingTargetMiddle
+  judgeRightName: EyeTrackingTargetRight
 --- !u!1 &1023947438
 GameObject:
   m_ObjectHideFlags: 0
@@ -23026,6 +23036,12 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   currentPhase: 0
+  bufferSeconds: 30
+  penaltyInterval: 30
+  penaltyPoints: 5
+  lastScore: 0
+  lastDuration: 0
+  presentationActualDuration: 0
 --- !u!1 &1118857047
 GameObject:
   m_ObjectHideFlags: 0
@@ -25669,11 +25685,12 @@ MonoBehaviour:
   sampleWindow: 512
   analyzeInterval: 0.1
   dbCalibrationOffset: 85
-  silenceDbThreshold: 25
+  silenceDbThreshold: 15
   maxSilenceDuration: 2
-  tooQuietLimit: 40
-  tooLoudLimit: 5
-  warningBufferTime: 0
+  tooQuietLimit: 20
+  tooLoudLimit: 75
+  warningBufferTime: 10
+  warningCooldownTime: 30
   onLiveWarning:
     m_PersistentCalls:
       m_Calls:
@@ -25704,6 +25721,13 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  totalAnalyzedTime: 0
+  timeTooQuiet: 0
+  timeTooLoud: 0
+  timeGood: 0
+  currentSilenceTimer: 0
+  totalPauseCount: 0
+  finalVolumeScore: 100
 --- !u!4 &1282503113
 Transform:
   m_ObjectHideFlags: 0
@@ -32717,6 +32741,7 @@ MonoBehaviour:
   modeManager: {fileID: 2118384658}
   pdf1: {fileID: 439457283}
   pdf2: {fileID: 119654530}
+  reportPdfViewer: {fileID: 0}
   menuButtonInput: {fileID: 3255699453802992142, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   micOnImage: {fileID: 2088628083}
   micOffImage: {fileID: 2017053361}
@@ -32733,6 +32758,7 @@ MonoBehaviour:
   hardwareMicName: 
   gazeTracker: {fileID: 1018752937}
   presentationTimer: {fileID: 1108964647}
+  timePicker: {fileID: 0}
   backendBaseUrl: https://d8ce-2001-ee0-d749-5780-4da3-3cb0-91f0-744e.ngrok-free.app/api/v1
   mode: practice
 --- !u!1 &1601608699
@@ -43385,10 +43411,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 546941257}
     m_Modifications:
-    - target: {fileID: 8289587624486595453, guid: 548017cf7bf6ffe46a9d2245d905b927, type: 3}
-      propertyPath: m_Name
-      value: LightGroup
-      objectReference: {fileID: 0}
     - target: {fileID: 2011067962421910853, guid: 548017cf7bf6ffe46a9d2245d905b927, type: 3}
       propertyPath: m_LocalPosition.x
       value: 2.304
@@ -43428,6 +43450,10 @@ PrefabInstance:
     - target: {fileID: 2011067962421910853, guid: 548017cf7bf6ffe46a9d2245d905b927, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8289587624486595453, guid: 548017cf7bf6ffe46a9d2245d905b927, type: 3}
+      propertyPath: m_Name
+      value: LightGroup
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
