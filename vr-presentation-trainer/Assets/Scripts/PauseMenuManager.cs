@@ -9,11 +9,28 @@ using UnityEngine.Networking;
 using UnityPdfViewer;
 using Assets.CustomPdfViewer.Scripts;
 
-[System.Serializable]
 public class GenerateQuestionResponse
 {
     // Đổi từ string question sang mảng hoặc List
     public List<string> questions;
+}
+
+[System.Serializable]
+public class EvaluateRequest
+{
+    public string session_id;
+    public int time_management_score;
+    public int eye_contact_score;
+    public int volume_score;
+    public List<float> eye_contact_zones;
+    public List<string> eye_contact_zone_names;
+    public string eye_contact_advice;
+    public int presentation_duration;
+    public int target_time;
+    public int qa_duration;
+    public float quiet_ratio;
+    public float loud_ratio;
+    public float avg_volume;
 }
 public class PauseMenuManager : MonoBehaviour
 {
@@ -22,6 +39,7 @@ public class PauseMenuManager : MonoBehaviour
     public ModeManager modeManager;
     public CustomPdfViewerUI pdf1;
     public CustomPdfViewerUI pdf2;
+    public CustomPdfViewerUI reportPdfViewer;
     public InputActionReference menuButtonInput;
     public GameObject micOnImage;
     public GameObject micOffImage;
@@ -62,6 +80,7 @@ public class PauseMenuManager : MonoBehaviour
 
     // Thêm biến này để chặn người dùng bấm nhiều lần
     private bool isUploading = false;
+    private float savedPresentationDuration = 0f;
 
     private void Start()
     {
@@ -290,6 +309,13 @@ public class PauseMenuManager : MonoBehaviour
 
     public void StartQaAPhase()
     {
+        if (presentationTimer != null)
+        {
+            presentationTimer.CalculatePresentationScore();
+            savedPresentationDuration = presentationTimer.lastDuration;
+            presentationTimer.StartQnATimer();
+        }
+
         SaveRecordingToFile();
         SendAudioForQuestion();
 
@@ -301,8 +327,16 @@ public class PauseMenuManager : MonoBehaviour
 
     public void EndQaAPhase()
     {
+        Debug.LogError("Nộp bài");
         if (isUploading) return;
         isUploading = true;
+
+        // --- DỪNG MỌI HOẠT ĐỘNG PHÂN TÍCH ---
+        TurnOffMic(); 
+        if (speechAnalyzer != null) speechAnalyzer.StopAndGenerateReport();
+        if (presentationTimer != null) presentationTimer.StopTimer();
+        if (gazeTracker != null) gazeTracker.StopAndExportTracking();
+        // -------------------------------------
 
         if (QuestionDialogManager.Instance != null)
         {
@@ -388,10 +422,50 @@ public class PauseMenuManager : MonoBehaviour
     // ==========================================
     private IEnumerator EvaluateCoroutine(string sessionId)
     {
-        string urlWithParams = $"{backendBaseUrl}/evaluate?session_id={UnityWebRequest.EscapeURL(sessionId)}";
+        // 1. Chốt các chỉ số trước khi gửi
+        if (presentationTimer != null) presentationTimer.CalculatePresentationScore();
+        if (speechAnalyzer != null) speechAnalyzer.GenerateAC4Report();
 
-        using (UnityWebRequest request = UnityWebRequest.Get(urlWithParams))
+        string url = $"{backendBaseUrl}/evaluate";
+
+        // Thu thập dữ liệu từ các Manager
+        PresentationEvaluationReport eyeContactReport = (gazeTracker != null) ? gazeTracker.GetCurrentReport() : null;
+        
+        EvaluateRequest evalRequest = new EvaluateRequest
         {
+            session_id = sessionId,
+            time_management_score = presentationTimer != null ? presentationTimer.lastScore : 0,
+            eye_contact_score = eyeContactReport != null ? Mathf.RoundToInt(eyeContactReport.interactionPercentage) : 0,
+            volume_score = speechAnalyzer != null ? speechAnalyzer.finalVolumeScore : 0,
+            eye_contact_zones = new List<float>(),
+            eye_contact_zone_names = new List<string>(),
+            eye_contact_advice = eyeContactReport != null ? eyeContactReport.interactionGrade : "N/A",
+            presentation_duration = Mathf.RoundToInt((savedPresentationDuration > 0) ? savedPresentationDuration : (presentationTimer != null ? presentationTimer.lastDuration : 0)),
+            target_time = Mathf.RoundToInt(presentationTimer != null ? presentationTimer.presentationDuration : 0),
+            qa_duration = Mathf.RoundToInt((presentationTimer != null && presentationTimer.currentPhase == PresentationTimer.SessionPhase.QnA) ? presentationTimer.lastDuration : 0),
+            quiet_ratio = (speechAnalyzer != null && speechAnalyzer.totalAnalyzedTime > 0) ? (speechAnalyzer.timeTooQuiet / speechAnalyzer.totalAnalyzedTime) : 0,
+            loud_ratio = (speechAnalyzer != null && speechAnalyzer.totalAnalyzedTime > 0) ? (speechAnalyzer.timeTooLoud / speechAnalyzer.totalAnalyzedTime) : 0,
+            avg_volume = speechAnalyzer != null ? speechAnalyzer.AvgVolume : 0
+        };
+
+        if (eyeContactReport != null && eyeContactReport.targetDetails != null)
+        {
+            foreach (var detail in eyeContactReport.targetDetails)
+            {
+                evalRequest.eye_contact_zones.Add(detail.viewPercentage);
+                evalRequest.eye_contact_zone_names.Add(detail.displayName);
+            }
+        }
+
+        string jsonBody = JsonUtility.ToJson(evalRequest);
+        Debug.Log($"[Evaluate] Sending JSON: {jsonBody}");
+
+        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+        {
+            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonBody);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
             request.SetRequestHeader("ngrok-skip-browser-warning", "69420");
             request.timeout = 600;
 
@@ -400,40 +474,48 @@ public class PauseMenuManager : MonoBehaviour
 
             if (request.result == UnityWebRequest.Result.Success)
             {
-                string jsonResult = request.downloadHandler.text;
-                Debug.Log($"✅ ĐÁNH GIÁ THÀNH CÔNG!");
+                byte[] pdfData = request.downloadHandler.data;
+                Debug.Log($"✅ ĐÁNH GIÁ THÀNH CÔNG! Nhận file PDF ({pdfData.Length} bytes)");
 
-                // Lưu file
-                SaveEvaluationToFile(sessionId, jsonResult);
+                // Lưu file PDF
+                string pdfPath = SaveEvaluationPdfToFile(sessionId, pdfData);
 
-                if (QuestionDialogManager.Instance != null) QuestionDialogManager.Instance.HideDialog();
+                // Load PDF lên UI
+                if (reportPdfViewer != null && !string.IsNullOrEmpty(pdfPath))
+                {
+                    reportPdfViewer.LoadPDF(pdfPath, true);
+                }
+
+                // if (QuestionDialogManager.Instance != null) QuestionDialogManager.Instance.HideDialog();
 
                 // HOÀN TẤT DÂY CHUYỀN -> GỌI MÀN HÌNH REPORT
                 StartReportPhase();
             }
             else
             {
-                Debug.LogError($"❌ Lỗi chấm điểm: {request.error}");
+                Debug.LogError($"❌ Lỗi chấm điểm: {request.error}\nChi tiết: {request.downloadHandler.text}");
                 if (QuestionDialogManager.Instance != null) QuestionDialogManager.Instance.ShowErrorState("Server AI báo lỗi khi chấm điểm!");
             }
         }
     }
 
     // ==========================================
-    // 4. HÀM PHỤ TRỢ: LƯU JSON VÀO MÁY
+    // 4. HÀM PHỤ TRỢ: LƯU PDF VÀO MÁY
     // ==========================================
-    private void SaveEvaluationToFile(string sessionId, string jsonData)
+    private string SaveEvaluationPdfToFile(string sessionId, byte[] pdfData)
     {
         try
         {
             string safeSessionId = string.Join("_", sessionId.Split(Path.GetInvalidFileNameChars()));
-            string filePath = Path.Combine(Application.persistentDataPath, $"EvaluationReport_{safeSessionId}.json");
-            File.WriteAllText(filePath, jsonData);
-            Debug.Log($"📄 Đã lưu file kết quả tại: {filePath}");
+            string filePath = Path.Combine(Application.persistentDataPath, $"EvaluationReport_{safeSessionId}.pdf");
+            File.WriteAllBytes(filePath, pdfData);
+            Debug.Log($"📄 Đã lưu file PDF kết quả tại: {filePath}");
+            return filePath;
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"❌ Lỗi khi ghi file kết quả: {e.Message}");
+            Debug.LogError($"❌ Lỗi khi ghi file PDF: {e.Message}");
+            return null;
         }
     }
 

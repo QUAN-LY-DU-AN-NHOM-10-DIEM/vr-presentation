@@ -16,3 +16,6 @@ numpy<2
 sherpa-onnx>=1.12.6
 soundfile
 av
+pymongo
+reportlab
+matplotlib

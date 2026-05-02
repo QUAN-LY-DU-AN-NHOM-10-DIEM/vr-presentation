@@ -198,3 +198,8 @@ async def process_evaluate(session_id: str) -> EvaluationResponse:
         detailed_qa=ac3_result["detailed"],
         session_id=session_id,
     )
+
+
+async def process_evaluate_content(context: str, presentation_transcript: str):
+    """Chấm điểm nội dung (AC1 - từ khóa)"""
+    return await evaluate_ac1(context, presentation_transcript)

@@ -162,7 +162,13 @@ public class QuestionDialogManager : MonoBehaviour
 
     public void EndSession()
     {
-        HideDialog();
+        isRecordingPhase = false;
+        if (currentTimerRoutine != null)
+        {
+            StopCoroutine(currentTimerRoutine);
+            currentTimerRoutine = null;
+        }
+
         if (pauseMenuManager != null) pauseMenuManager.EndQaAPhase();
     }
 

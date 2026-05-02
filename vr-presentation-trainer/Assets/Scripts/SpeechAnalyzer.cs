@@ -38,13 +38,18 @@ public class SpeechAnalyzer : MonoBehaviour
     private float analyzeTimer = 0f;
 
     // --- Data for Report ---
-    private float totalAnalyzedTime = 0f;
-    private float timeTooQuiet = 0f;
-    private float timeTooLoud = 0f;
-    private float timeGood = 0f;
+    [HideInInspector] public float totalAnalyzedTime = 0f;
+    [HideInInspector] public float timeTooQuiet = 0f;
+    [HideInInspector] public float timeTooLoud = 0f;
+    [HideInInspector] public float timeGood = 0f;
 
-    private float currentSilenceTimer = 0f;
-    private int totalPauseCount = 0; // Số lần ngừng quá 2 giây
+    [HideInInspector] public float currentSilenceTimer = 0f;
+    [HideInInspector] public int totalPauseCount = 0; // Số lần ngừng quá 2 giây
+
+    private float totalVolumeSum = 0f;
+    private int volumeSampleCount = 0;
+    public float AvgVolume => volumeSampleCount > 0 ? totalVolumeSum / volumeSampleCount : 0f;
+    public int finalVolumeScore = 100;
 
     private float[] waveData;
 
@@ -76,6 +81,8 @@ public class SpeechAnalyzer : MonoBehaviour
         // Reset toàn bộ dữ liệu báo cáo
         totalAnalyzedTime = 0f; timeTooQuiet = 0f; timeTooLoud = 0f; timeGood = 0f;
         currentSilenceTimer = 0f; totalPauseCount = 0;
+        totalVolumeSum = 0f; volumeSampleCount = 0;
+        finalVolumeScore = 100;
 
         Debug.Log("🎙️ [Speech Analyzer] Bắt đầu phân tích giọng nói ngầm...");
     }
@@ -111,6 +118,10 @@ public class SpeechAnalyzer : MonoBehaviour
         }
         // Ép dbValue không bao giờ rớt xuống dưới 0
         dbValue = Mathf.Max(0, dbValue);
+
+        // Theo dõi âm lượng trung bình
+        totalVolumeSum += dbValue;
+        volumeSampleCount++;
 
         // 3. Cập nhật các khoảng thời gian cho AC4
         totalAnalyzedTime += analyzeInterval;
@@ -161,7 +172,7 @@ public class SpeechAnalyzer : MonoBehaviour
          Debug.Log($"Current dB: {dbValue:F1}");
     }
 
-    private void GenerateAC4Report()
+    public void GenerateAC4Report()
     {
         if (totalAnalyzedTime == 0) return;
 
@@ -169,19 +180,19 @@ public class SpeechAnalyzer : MonoBehaviour
         float loudRatio = timeTooLoud / totalAnalyzedTime;
         float goodRatio = timeGood / totalAnalyzedTime;
 
-        int finalScore = 100;
+        finalVolumeScore = 100;
 
         if (quietRatio > 0.20f)
         {
-            finalScore -= 15;
-            finalScore -= Mathf.FloorToInt((quietRatio - 0.20f) * 100f);
+            finalVolumeScore -= 15;
+            finalVolumeScore -= Mathf.FloorToInt((quietRatio - 0.20f) * 100f);
         }
         if (loudRatio > 0.10f)
         {
-            finalScore -= 10;
-            finalScore -= Mathf.FloorToInt((loudRatio - 0.10f) * 100f);
+            finalVolumeScore -= 10;
+            finalVolumeScore -= Mathf.FloorToInt((loudRatio - 0.10f) * 100f);
         }
-        finalScore = Mathf.Max(0, finalScore);
+        finalVolumeScore = Mathf.Max(0, finalVolumeScore);
 
         // --- TẠO DỮ LIỆU JSON ---
         SpeechReportData report = new SpeechReportData
@@ -192,7 +203,7 @@ public class SpeechAnalyzer : MonoBehaviour
             percentTooQuiet = (float)System.Math.Round(quietRatio * 100f, 1),
             percentGoodVolume = (float)System.Math.Round(goodRatio * 100f, 1),
             percentTooLoud = (float)System.Math.Round(loudRatio * 100f, 1),
-            finalVolumeScore = finalScore
+            finalVolumeScore = finalVolumeScore
         };
 
         // Chuyển Data thành chuỗi JSON (chữ 'true' giúp format JSON đẹp và dễ đọc)

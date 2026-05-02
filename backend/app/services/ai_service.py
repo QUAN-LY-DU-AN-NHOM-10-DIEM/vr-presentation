@@ -85,28 +85,26 @@ async def _call_llm(prompt: str) -> str:
         return content
 
     elif PROVIDER == "groq":
-        client = AsyncOpenAI(
-            api_key=os.getenv("GROQ_API_KEY"), base_url="https://api.groq.com/openai/v1"
-        )
+        client = AsyncOpenAI(api_key=os.getenv("GROQ_API_KEY"), base_url="https://api.groq.com/openai/v1")
         response = await client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {
-                    "role": "system", 
-                    "content": "You are a JSON-only API. You must output only a valid JSON object. NEVER output conversational text like 'Here is the result'. Start your response with '{' and end with '}'."
+                    "role": "system",
+                    "content": "You are a JSON-only API. You must output only a valid JSON object. NEVER output conversational text like 'Here is the result'. Start your response with '{' and end with '}'.",
                 },
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": prompt},
             ],
             temperature=0.1,
-            max_tokens=2048, # QUAN TRỌNG: Bơm thêm token để model không bị "hết hơi" giữa chừng
-            response_format={"type": "json_object"}
+            max_tokens=2048,  # QUAN TRỌNG: Bơm thêm token để model không bị "hết hơi" giữa chừng
+            response_format={"type": "json_object"},
         )
         content = _get_content(response.choices[0].message.content)
-        
+
         # Mẹo dọn dẹp phòng hờ: Nếu model vẫn lỡ mồm ở đầu, ta cắt bỏ phần text thừa
         if "{" in content:
-            content = content[content.find("{"):]
-            
+            content = content[content.find("{") :]
+
         print(f"[Groq] Raw response: {content[:500]}...")
         if not content:
             raise ValueError("Groq returned empty response")
@@ -212,17 +210,13 @@ CẤU TRÚC JSON YÊU CẦU:
 
         # 2. Fallback: Parse bằng Regex nếu JSON hỏng nặng
         print("[clean_and_summarize] JSON parse failed, falling back to Regex...")
-        title_m = re.search(
-            r"(?:\"title\"|Title)[\s:\"\']*([^\"\n]+)", raw_text, re.IGNORECASE
-        )
+        title_m = re.search(r"(?:\"title\"|Title)[\s:\"\']*([^\"\n]+)", raw_text, re.IGNORECASE)
         desc_m = re.search(
             r"(?:\"description\"|Description)[\s:\"\']*([^\"\n]+)",
             raw_text,
             re.IGNORECASE,
         )
-        ctx_m = re.search(
-            r"(?:\"context\"|Context)[^\n]*\n((?:[^\n]+\n?)+)", raw_text, re.IGNORECASE
-        )
+        ctx_m = re.search(r"(?:\"context\"|Context)[^\n]*\n((?:[^\n]+\n?)+)", raw_text, re.IGNORECASE)
 
         title = title_m.group(1).strip() if title_m else "Untitled"
         description = desc_m.group(1).strip() if desc_m else ""
@@ -259,6 +253,7 @@ PHẦN TRÌNH BÀY CỦA THÍ SINH:
 NHIỆM VỤ: Tạo ra 10 câu hỏi dựa trên TÀI LIỆU GỐC.
 1. Câu hỏi ngắn (dưới 30 từ), không hỏi Có/Không.
 2. TUYỆT ĐỐI KHÔNG dùng dấu nháy kép (") bên trong câu hỏi. Dùng nháy đơn (') nếu cần trích dẫn thuật ngữ.
+3. Sử dụng Tiếng Việt để đặt câu hỏi.
 
 KỶ LUẬT ĐẦU RA (CHỈ XUẤT JSON):
 Tuyệt đối không giải thích, không dùng markdown. Bạn phải trả về một object JSON có đúng một trường duy nhất tên là "questions". 
@@ -277,7 +272,7 @@ Ví dụ cấu trúc bạn cần tự tưởng tượng: Object -> chứa key "q
             if "questions" in parsed_data and isinstance(parsed_data["questions"], list):
                 return [str(q).strip() for q in parsed_data["questions"][:10]]
         except json.JSONDecodeError:
-            pass # Chuyển sang fallback nếu JSON hỏng
+            pass  # Chuyển sang fallback nếu JSON hỏng
 
         # 2. Parse bằng hàm JSON extraction custom của bạn
         parsed_data = _extract_json(raw_text)
@@ -291,9 +286,9 @@ Ví dụ cấu trúc bạn cần tự tưởng tượng: Object -> chứa key "q
 
         # 3. Fallback Regex (Đã được tinh chỉnh để bỏ qua lỗi lặt vặt)
         print("[generate_questions] JSON parse failed, falling back to Regex...")
-        
+
         # Bắt danh sách đánh số: 1. Câu hỏi, 2) Câu hỏi... (Ưu tiên regex này hơn vì nó an toàn với nháy kép)
-        numbered_items = re.findall(r'(?:^\d+[\.\)]\s*|- \s*)(.+?)(?:\n|$)', raw_text, re.MULTILINE)
+        numbered_items = re.findall(r"(?:^\d+[\.\)]\s*|- \s*)(.+?)(?:\n|$)", raw_text, re.MULTILINE)
         if len(numbered_items) >= 3:
             return [q.strip().strip('",') for q in numbered_items[:10]]
 
@@ -309,6 +304,7 @@ Ví dụ cấu trúc bạn cần tự tưởng tượng: Object -> chứa key "q
     except Exception as e:
         print(f"❌ Lỗi AI sinh câu hỏi: {e}")
         return []
+
 
 async def evaluate_ac1(context: str, answer_text: str) -> dict:
     prompt = f"""Bạn là một Giám khảo chấm thi chuyên nghiệp.
@@ -335,10 +331,10 @@ BÀI TRÌNH BÀY CỦA THÍ SINH:
 """
     try:
         raw = await _call_llm(prompt)
-        
+
         # Do ta đã dùng mẹo cắt chuỗi ở hàm _call_llm, raw text bây giờ chắc chắn bắt đầu bằng {
-        data = json.loads(raw) 
-        
+        data = json.loads(raw)
+
         keywords = data.get("keywords", [])
         return {
             "score": float(data.get("score", 50.0)),
@@ -369,22 +365,15 @@ async def evaluate_ac2(answer_text: str, total_words: int) -> Dict[str, Any]:
     Cải tiến: Dùng Regex word boundary (\b) để bắt từ chính xác hơn, bỏ qua dấu câu.
     """
     # Xóa dấu câu, chuyển chữ thường để chuẩn hóa
-    clean_text = re.sub(r'[^\w\s]', ' ', answer_text.lower())
+    clean_text = re.sub(r"[^\w\s]", " ", answer_text.lower())
     words = clean_text.split()
     actual_total = len(words)
 
     if actual_total < 10:
-        return {
-            "score": 0.0,
-            "has_intro": False,
-            "has_closing": False,
-            "feedback": "Bài trình bày quá ngắn để đánh giá bố cục."
-        }
+        return {"score": 0.0, "has_intro": False, "has_closing": False, "feedback": "Bài trình bày quá ngắn để đánh giá bố cục."}
 
-    intro_patterns = [r"\bxin chào\b", r"\bkính thưa\b", r"\bem xin\b", r"\btôi xin\b", 
-                      r"\bbắt đầu\b", r"\bhôm nay\b", r"\bchủ đề\b", r"\bbáo cáo\b"]
-    closing_patterns = [r"\btóm tắt\b", r"\bkết luận\b", r"\bcảm ơn\b", r"\bhết\b", 
-                        r"\bcâu hỏi\b", r"\bq a\b", r"\bxin phép\b", r"\bkết thúc\b"]
+    intro_patterns = [r"\bxin chào\b", r"\bkính thưa\b", r"\bem xin\b", r"\btôi xin\b", r"\bbắt đầu\b", r"\bhôm nay\b", r"\bchủ đề\b", r"\bbáo cáo\b"]
+    closing_patterns = [r"\btóm tắt\b", r"\bkết luận\b", r"\bcảm ơn\b", r"\bhết\b", r"\bcâu hỏi\b", r"\bq a\b", r"\bxin phép\b", r"\bkết thúc\b"]
 
     # Quét trong 30% đầu cho Mở bài và 30% cuối cho Kết bài (tối đa 200 từ để tránh lỗi bài quá dài)
     intro_limit = min(int(actual_total * 0.3), 200)
@@ -398,7 +387,7 @@ async def evaluate_ac2(answer_text: str, total_words: int) -> Dict[str, Any]:
 
     score = 100.0
     if not has_intro:
-        score -= 20.0 # Thiếu mở bài trừ nặng hơn
+        score -= 20.0  # Thiếu mở bài trừ nặng hơn
     if not has_closing:
         score -= 20.0
 
@@ -427,7 +416,7 @@ async def evaluate_ac3(questions: Dict) -> Dict[str, Any]:
         answer = qdata.get("answer", "")
 
         score_result = await evaluate_qa_item(question, answer)
-        
+
         # Nếu dùng Pydantic model QAItemEvaluation, bạn wrap lại ở đây
         item_eval = {
             "question_id": int(qid),
@@ -436,7 +425,7 @@ async def evaluate_ac3(questions: Dict) -> Dict[str, Any]:
             "content_match_percent": score_result["content_match"],
         }
         detailed.append(item_eval)
-        
+
         total_score += score_result["score"]
         count += 1
 
@@ -484,19 +473,15 @@ CÂU TRẢ LỜI: "{answer}"
     try:
         raw = await _call_llm(prompt)
         data = _extract_json(raw)
-        
+
         if data and isinstance(data, dict):
             return {
                 "score": float(data.get("score", 50.0)),
                 "content_match": float(data.get("content_match", 0.0)),
                 "feedback": data.get("feedback", "Đánh giá hoàn tất.").strip(),
             }
-            
+
         raise ValueError("Không parse được JSON từ AI.")
     except Exception as e:
         print(f"❌ QA Evaluation Error: {e}")
-        return {
-            "score": 50.0, 
-            "content_match": 0.0, 
-            "feedback": f"Lỗi hệ thống khi đánh giá: {str(e)}"
-        }
+        return {"score": 50.0, "content_match": 0.0, "feedback": f"Lỗi hệ thống khi đánh giá: {str(e)}"}

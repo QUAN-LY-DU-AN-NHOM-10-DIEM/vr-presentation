@@ -52,6 +52,7 @@ public class PresentationTimer : MonoBehaviour
 
     [HideInInspector] public int lastScore = 0;
     [HideInInspector] public float lastDuration = 0f;
+    [HideInInspector] public float presentationActualDuration = 0f;
 
     void Update()
     {

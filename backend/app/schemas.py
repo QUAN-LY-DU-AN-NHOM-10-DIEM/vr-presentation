@@ -57,3 +57,19 @@ class EvaluationResponse(BaseModel):
     ac3_feedback: str
     detailed_qa: List[QAItemEvaluation]
     session_id: str
+
+
+class EvaluateRequest(BaseModel):
+    session_id: str
+    time_management_score: float
+    eye_contact_score: float
+    volume_score: float
+    eye_contact_zones: List[float]
+    eye_contact_zone_names: List[str]
+    eye_contact_advice: str
+    presentation_duration: int
+    target_time: int
+    qa_duration: int
+    quiet_ratio: float
+    loud_ratio: float
+    avg_volume: float

@@ -24619,6 +24619,8 @@ MonoBehaviour:
     displayName: "Tr\xE1i Tr\u01B0\u1EDBc"
   - objectName: EyeTrackingTargetLB
     displayName: "Tr\xE1i Sau"
+  totalPresentationTime: 0
+  interactionPercentage: 0
   currentRoomType: 0
   judgeLeftName: EyeTrackingTargetLeft
   judgeMiddleName: EyeTrackingTargetMiddle
@@ -25619,19 +25621,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
-      - m_Target: {fileID: 1601254435}
-        m_TargetAssemblyTypeName: PauseMenuManager, Assembly-CSharp
-        m_MethodName: StartReportPhase
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1577156867}
         m_TargetAssemblyTypeName: QuestionDialogManager, Assembly-CSharp
         m_MethodName: EndSession
         m_Mode: 1
@@ -25642,6 +25632,18 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 1
+        m_CallState: 2
+      - m_Target: {fileID: 1909878140}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &1081891690
 MonoBehaviour:
@@ -25839,7 +25841,7 @@ MonoBehaviour:
   loadingPanel: {fileID: 1307606374}
   analyzeButton: {fileID: 1704750881}
   loadingText: {fileID: 1369025639}
-  backendUrl: https://1cdf-14-241-225-125.ngrok-free.app/api/v1/upload-context
+  backendUrl: https://d8ce-2001-ee0-d749-5780-4da3-3cb0-91f0-744e.ngrok-free.app/api/v1/upload-context
   selectedPdfPath: 
 --- !u!114 &1108964647
 MonoBehaviour:
@@ -25920,6 +25922,7 @@ MonoBehaviour:
   penaltyPoints: 5
   lastScore: 0
   lastDuration: 0
+  presentationActualDuration: 0
 --- !u!1 &1109646770
 GameObject:
   m_ObjectHideFlags: 0
@@ -28911,6 +28914,13 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  totalAnalyzedTime: 0
+  timeTooQuiet: 0
+  timeTooLoud: 0
+  timeGood: 0
+  currentSilenceTimer: 0
+  totalPauseCount: 0
+  finalVolumeScore: 100
 --- !u!4 &1282503113
 Transform:
   m_ObjectHideFlags: 0
@@ -36817,6 +36827,7 @@ MonoBehaviour:
   modeManager: {fileID: 2118384658}
   pdf1: {fileID: 439457283}
   pdf2: {fileID: 119654530}
+  reportPdfViewer: {fileID: 2049847329}
   menuButtonInput: {fileID: 3255699453802992142, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   micOnImage: {fileID: 2088628083}
   micOffImage: {fileID: 2017053361}
@@ -36834,7 +36845,7 @@ MonoBehaviour:
   gazeTracker: {fileID: 1018752937}
   presentationTimer: {fileID: 1108964647}
   timePicker: {fileID: 903566367}
-  backendBaseUrl: https://1cdf-14-241-225-125.ngrok-free.app/api/v1
+  backendBaseUrl: https://d8ce-2001-ee0-d749-5780-4da3-3cb0-91f0-744e.ngrok-free.app/api/v1
   mode: practice
 --- !u!1 &1601608699
 GameObject:
@@ -46941,6 +46952,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PageChangeListener
   nextSlideInput: {fileID: -1445923187611823353, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   previousSlideInput: {fileID: 25491920987804301, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+--- !u!114 &2049847329 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7968120448156587179, guid: 680df940a2e1ef04d93123533479fad1, type: 3}
+  m_PrefabInstance: {fileID: 2049847325}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2049847327}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40070f6a54d22da418724b87b7444a1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnityPdfViewer.PdfViewerUI
 --- !u!1 &2050985459
 GameObject:
   m_ObjectHideFlags: 0

@@ -65,7 +65,8 @@ public class GazeTrackingManager : MonoBehaviour
 
     private bool isTracking = false;
     private float timer = 0f;
-    private float totalPresentationTime = 0f;
+    public float totalPresentationTime = 0f;
+    public float interactionPercentage = 0f;
 
     private Dictionary<string, TargetTrackingState> trackingStates = new Dictionary<string, TargetTrackingState>();
     private Dictionary<string, Collider> targetColliders = new Dictionary<string, Collider>(); // Lưu trữ Collider để tính toán
@@ -361,10 +362,8 @@ public class GazeTrackingManager : MonoBehaviour
         SaveReportToJSON();
     }
 
-    private void SaveReportToJSON()
+    public PresentationEvaluationReport GetCurrentReport()
     {
-        if (totalPresentationTime <= 0) return;
-
         PresentationEvaluationReport report = new PresentationEvaluationReport();
         report.sessionDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
         report.totalSessionTime = totalPresentationTime;
@@ -373,7 +372,7 @@ public class GazeTrackingManager : MonoBehaviour
         foreach (var kvp in trackingStates)
         {
             report.totalAudienceFocusTime += kvp.Value.totalLookTime;
-            float percent = (kvp.Value.totalLookTime / totalPresentationTime) * 100f;
+            float percent = (totalPresentationTime > 0) ? (kvp.Value.totalLookTime / totalPresentationTime) * 100f : 0f;
 
             report.targetDetails.Add(new TargetFocusData
             {
@@ -385,10 +384,21 @@ public class GazeTrackingManager : MonoBehaviour
             });
         }
 
-        report.interactionPercentage = (report.totalAudienceFocusTime / totalPresentationTime) * 100f;
+        report.interactionPercentage = (totalPresentationTime > 0) ? (report.totalAudienceFocusTime / totalPresentationTime) * 100f : 0f;
+        this.interactionPercentage = report.interactionPercentage;
+
         if (report.interactionPercentage < 30f) report.interactionGrade = "Kém";
         else if (report.interactionPercentage <= 70f) report.interactionGrade = "Khá";
         else report.interactionGrade = "Tốt";
+
+        return report;
+    }
+
+    private void SaveReportToJSON()
+    {
+        if (totalPresentationTime <= 0) return;
+
+        PresentationEvaluationReport report = GetCurrentReport();
 
         // Tên file cố định để luôn tự động Override file cũ
         string fileName = "EyeContact_Latest_Report.json";
