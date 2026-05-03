@@ -117,19 +117,19 @@ public class PresentationTimer : MonoBehaviour
         if (duration > 0f)
             presentationDuration = duration;
 
-        currentDurationLimit = presentationDuration; // Áp dụng thời gian thuyết trình
+        currentDurationLimit = presentationDuration; 
         ForceResetTimer();
         isTimerRunning = true;
-        Debug.Log("[Timer] BẮT ĐẦU THUYẾT TRÌNH.");
+        Debug.Log("⏱️ PresentationTimer: Bắt đầu đếm giờ thuyết trình.");
     }
 
     public void StartQnATimer()
     {
         currentPhase = SessionPhase.QnA;
-        currentDurationLimit = qnaDuration; // Áp dụng thời gian Q&A
+        currentDurationLimit = qnaDuration; 
         ForceResetTimer();
         isTimerRunning = true;
-        Debug.Log("[Timer] BẮT ĐẦU Q&A.");
+        Debug.Log("⏱️ PresentationTimer: Bắt đầu đếm giờ Q&A.");
     }
 
     public void SetPresentationDuration(float duration)

@@ -86,18 +86,51 @@ public class SpeechAnalyzer : MonoBehaviour
         }
     }
 
-    // GỌI HÀM NÀY KHI BẮT ĐẦU RECORD (Từ PauseMenuManager)
     public void StartAnalysis(string micName, AudioClip clip)
     {
+        if (clip == null)
+        {
+            Debug.LogWarning("⚠️ SpeechAnalyzer: Không tìm thấy AudioClip để phân tích!");
+            return;
+        }
+
         activeMicName = micName;
         activeClip = clip;
         isAnalyzing = true;
 
         // Reset toàn bộ dữ liệu báo cáo
+        ResetMetrics();
+        Debug.Log("🎙️ SpeechAnalyzer: Đã bắt đầu phân tích âm thanh.");
+    }
+
+    private void ResetMetrics()
+    {
         totalAnalyzedTime = 0f; timeTooQuiet = 0f; timeTooLoud = 0f; timeGood = 0f;
         currentSilenceTimer = 0f; totalPauseCount = 0;
         totalVolumeSum = 0f; volumeSampleCount = 0;
         finalVolumeScore = 100;
+        badVolumeTimer = 0f;
+    }
+
+    public void PauseAnalysis()
+    {
+        isAnalyzing = false;
+        Debug.Log("⏸ SpeechAnalyzer: Đã tạm dừng phân tích.");
+    }
+
+    public void ResumeAnalysis()
+    {
+        // Khi resume, cập nhật lại Clip từ MicManager (vì Clip cũ có thể đã bị hủy)
+        if (MicrophoneManager.Instance != null)
+        {
+            activeClip = MicrophoneManager.Instance.CurrentClip;
+        }
+        
+        if (activeClip != null)
+        {
+            isAnalyzing = true;
+            Debug.Log("▶️ SpeechAnalyzer: Đã tiếp tục phân tích.");
+        }
     }
 
     // GỌI HÀM NÀY KHI DỪNG RECORD -> NÓ SẼ TRẢ VỀ BÁO CÁO!
@@ -232,25 +265,7 @@ public class SpeechAnalyzer : MonoBehaviour
         Debug.Log("JSON Report Saved Successfully at: " + filePath);
     }
 
-    // TẠM DỪNG PHÂN TÍCH
-    public void PauseAnalysis()
-    {
-        if (isAnalyzing)
-        {
-            isAnalyzing = false;
-            Debug.Log("⏸ [Speech Analyzer] Đã tạm dừng phân tích.");
-        }
-    }
 
-    // TIẾP TỤC PHÂN TÍCH LẠI
-    public void ResumeAnalysis()
-    {
-        if (!isAnalyzing && activeClip != null)
-        {
-            isAnalyzing = true;
-            Debug.Log("▶️ [Speech Analyzer] Tiếp tục phân tích.");
-        }
-    }
 
     private void HandleLiveWarning(string stateName, string message, Color warningColor)
     {
@@ -262,7 +277,12 @@ public class SpeechAnalyzer : MonoBehaviour
             badVolumeTimer += analyzeInterval;
             if (badVolumeTimer >= warningBufferTime) // Đủ 10 giây
             {
+                Debug.Log($"⚠️ [Speech Warning]: {message}");
                 onLiveWarning?.Invoke(message, warningColor);
+                
+                if (VRWarningHUD.Instance != null)
+                    VRWarningHUD.Instance.ShowWarning(message, warningColor);
+
                 badVolumeTimer = 0f;
 
                 // KÍCH HOẠT COOLDOWN 30 GIÂY NGAY KHI VỪA BÁO CẢNH BÁO

@@ -59,8 +59,6 @@ public class GazeTrackingManager : MonoBehaviour
     public Transform activeRoomParent;
 
     [Header("UI & Display Settings")]
-    public TextMeshProUGUI liveAdviceTextUI;
-    public GameObject liveAdviceCanvas;
     public List<TargetNameMapping> customDisplayNames = new List<TargetNameMapping>();
 
     private bool isTracking = false;
@@ -69,34 +67,27 @@ public class GazeTrackingManager : MonoBehaviour
     public float interactionPercentage = 0f;
 
     private Dictionary<string, TargetTrackingState> trackingStates = new Dictionary<string, TargetTrackingState>();
-    private Dictionary<string, Collider> targetColliders = new Dictionary<string, Collider>(); // Lưu trữ Collider để tính toán
+    private Dictionary<string, Collider> targetColliders = new Dictionary<string, Collider>();
 
     [Header("Room Type")]
-    [Tooltip("Loại phòng hiện tại - quyết định cách hiển thị cảnh báo")]
     public RoomType currentRoomType = RoomType.NormalClass;
 
-    // NormalClass: cảnh báo nếu bỏ qua 1 phía liên tục quá 60 giây
-    private float continuousIgnoreWarningThreshold = 60f;
-
-    // DefenseRoom: cảnh báo nếu bỏ qua giám khảo liên tục quá 30 giây
-    private float judgeIgnoreWarningThreshold = 30f;
+    [Header("Gaze Warning Thresholds")]
+    public float continuousIgnoreWarningThreshold = 10f; // Hạ xuống 10s để test
+    public float judgeIgnoreWarningThreshold = 10f;      // Hạ xuống 10s để test
 
     [Header("Judge Tracking (Optional)")]
-    [Tooltip("Tên GameObject của giám khảo bên TRÁI")]
     public string judgeLeftName = "EyeTrackingTargetLeft";
-    [Tooltip("Tên GameObject của giám khảo bên GIỮA")]
     public string judgeMiddleName = "EyeTrackingTargetMiddle";
-    [Tooltip("Tên GameObject của giám khảo bên PHẢI")]
     public string judgeRightName = "EyeTrackingTargetRight";
 
-    // true = đang hiển thị cảnh báo, chờ user nhìn lại
     private bool isWarningActive = false;
     private List<string> currentWarningTargets = new List<string>();
 
     public enum RoomType
     {
-        NormalClass,    // Phòng 1: Left/Right là 2 hàng NPC, KHÔNG phải judges
-        DefenseRoom     // Phòng 2: Left/Middle/Right là 3 giám khảo
+        NormalClass,
+        DefenseRoom
     }
 
     private string GetDisplayName(string objName)
@@ -123,44 +114,39 @@ public class GazeTrackingManager : MonoBehaviour
         }
     }
 
-    // ĐÃ THAY THẾ SPHERECAST BẰNG HỆ THỐNG TÍNH GÓC NHÌN (FOV CONE)
     void PerformVisionCheck()
     {
+        // Luôn lấy Camera chính để làm gốc tọa độ và hướng nhìn (đặc biệt quan trọng trong VR)
+        Transform eyeTransform = Camera.main != null ? Camera.main.transform : this.transform;
+        
         string currentTargetName = "Không gian trống";
-
-        // Góc nhỏ nhất tính từ trung tâm mắt (Giúp xác định bạn đang nhìn trực diện vào ai nhất nếu có nhiều người trong tầm nhìn)
         float smallestAngle = fieldOfViewAngle / 2f;
-
-        // Giả lập điểm mà mắt đang nhìn thẳng tới ở tít đằng xa
-        Vector3 gazeForwardPoint = transform.position + transform.forward * viewDistance;
+        Vector3 gazeForwardPoint = eyeTransform.position + eyeTransform.forward * viewDistance;
+        Vector3 eyePos = eyeTransform.position;
+        Vector3 eyeForward = eyeTransform.forward;
 
         foreach (var kvp in targetColliders)
         {
             Collider col = kvp.Value;
             if (col == null || !col.gameObject.activeInHierarchy) continue;
 
-            // 1. Tìm điểm trên khối Collider nằm gần nhất với tia nhìn thẳng của bạn
-            // (Hàm này cực kỳ lợi hại, nó hoạt động hoàn hảo cho cả khối hộp siêu to của Lớp học lẫn khối nhỏ của NPC)
             Vector3 closestPointOnTarget = col.ClosestPoint(gazeForwardPoint);
-
-            // 2. Tính hướng từ Mắt tới cái điểm đó
-            Vector3 directionToTarget = (closestPointOnTarget - transform.position).normalized;
-
-            // 3. Tính góc lệch giữa hướng mắt đang nhìn thẳng và hướng tới mục tiêu
-            float angleToTarget = Vector3.Angle(transform.forward, directionToTarget);
-
-            // 4. Kiểm tra xem điểm đó có nằm trong "Hình nón tầm nhìn" và trong giới hạn khoảng cách không
-            float distanceToTarget = Vector3.Distance(transform.position, closestPointOnTarget);
+            Vector3 directionToTarget = (closestPointOnTarget - eyePos).normalized;
+            float angleToTarget = Vector3.Angle(eyeForward, directionToTarget);
+            float distanceToTarget = Vector3.Distance(eyePos, closestPointOnTarget);
 
             if (angleToTarget < smallestAngle && distanceToTarget <= viewDistance)
             {
-                // Nếu mục tiêu này nằm gần vị trí trung tâm mắt hơn mục tiêu trước đó
                 smallestAngle = angleToTarget;
                 currentTargetName = kvp.Key;
             }
         }
 
-        // Cập nhật bộ đếm thời gian
+        if (totalPresentationTime % 1.0f < 0.1f)
+        {
+            Debug.Log("[Gaze Debug] Đang nhìn vào: " + (string.IsNullOrEmpty(currentTargetName) ? "Không có gì (-)" : currentTargetName));
+        }
+
         foreach (var kvp in trackingStates)
         {
             if (kvp.Key == currentTargetName)
@@ -171,6 +157,12 @@ public class GazeTrackingManager : MonoBehaviour
             else
             {
                 kvp.Value.continuousIgnoredTime += checkInterval;
+                
+                // Log để debug: Chỉ hiện nếu bị bỏ rơi > 2s để tránh rác console
+                if (kvp.Value.continuousIgnoredTime > 2f && totalPresentationTime % 2.0f < 0.1f)
+                {
+                    Debug.Log("🔍 [Gaze Status]: '" + kvp.Key + "' đã bị bỏ rơi " + kvp.Value.continuousIgnoredTime.ToString("F1") + "s");
+                }
 
                 if (kvp.Value.continuousIgnoredTime >= maxIgnoreTimeLimit)
                 {
@@ -183,77 +175,96 @@ public class GazeTrackingManager : MonoBehaviour
 
     private void UpdateAdviceUI()
     {
-        if (liveAdviceTextUI == null || trackingStates.Count == 0) return;
+        if (trackingStates.Count == 0) return;
+        if (totalPresentationTime < 2f) return;
 
-        // Ẩn trong 5 giây đầu
-        if (totalPresentationTime < 5f)
-        {
-            liveAdviceCanvas.SetActive(false);
-            return;
-        }
-
-        // Cảnh báo đang hiển thị → chỉ tắt khi user nhìn lại
         if (isWarningActive)
         {
-            // DefenseRoom: cập nhật lại cảnh báo nếu danh sách giám khảo bị bỏ qua thay đổi
             if (currentRoomType == RoomType.DefenseRoom)
             {
                 List<string> ignoredJudges = new List<string>();
                 List<string> ignoredJudgeNames = new List<string>();
 
-                if (IsJudgeIgnored(judgeLeftName))   { ignoredJudges.Add("trái");  ignoredJudgeNames.Add(judgeLeftName); }
-                if (IsJudgeIgnored(judgeMiddleName))  { ignoredJudges.Add("giữa");  ignoredJudgeNames.Add(judgeMiddleName); }
-                if (IsJudgeIgnored(judgeRightName))   { ignoredJudges.Add("phải"); ignoredJudgeNames.Add(judgeRightName); }
+                // Kiểm tra 3 vị trí đích danh
+                if (IsJudgeIgnored(judgeLeftName)) { ignoredJudges.Add("trái"); ignoredJudgeNames.Add(judgeLeftName); }
+                if (IsJudgeIgnored(judgeMiddleName)) { ignoredJudges.Add("giữa"); ignoredJudgeNames.Add(judgeMiddleName); }
+                if (IsJudgeIgnored(judgeRightName)) { ignoredJudges.Add("phải"); ignoredJudgeNames.Add(judgeRightName); }
+
+                // Nếu không tìm thấy giám khảo đích danh, kiểm tra toàn bộ targets trong phòng
+                if (ignoredJudges.Count == 0)
+                {
+                    foreach (var kvp in trackingStates)
+                    {
+                        if (kvp.Value.continuousIgnoredTime >= judgeIgnoreWarningThreshold)
+                        {
+                            ignoredJudges.Add(GetDisplayName(kvp.Key));
+                            ignoredJudgeNames.Add(kvp.Key);
+                        }
+                    }
+                }
 
                 if (ignoredJudges.Count > 0)
                 {
-                    // Cập nhật lại text và targets mới nhất
                     string positions = string.Join("/", ignoredJudges);
-                    liveAdviceTextUI.text = $"Bạn đang không nhìn vào giám khảo ở {positions}, hãy nhìn vào giám khảo!";
+                    string msg = "Bạn đang không nhìn vào giám khảo ở " + positions + ", hãy nhìn vào giám khảo!";
+                    if (VRWarningHUD.Instance != null) VRWarningHUD.Instance.ShowWarning(msg, Color.yellow);
                     currentWarningTargets = ignoredJudgeNames;
                 }
                 else
                 {
-                    // Không còn giám khảo nào bị bỏ qua → tắt cảnh báo
                     DismissWarning();
                 }
-
                 return;
             }
 
-            if (HasUserLookedAtWarningTargets())
-                DismissWarning();
+            if (HasUserLookedAtWarningTargets()) DismissWarning();
             return;
         }
 
-        // ===== DefenseRoom: giám khảo, ngưỡng 30 giây =====
         if (currentRoomType == RoomType.DefenseRoom)
         {
             List<string> ignoredJudges = new List<string>();
             List<string> ignoredJudgeNames = new List<string>();
 
-            if (IsJudgeIgnored(judgeLeftName))  { ignoredJudges.Add("trái");  ignoredJudgeNames.Add(judgeLeftName); }
-            if (IsJudgeIgnored(judgeMiddleName)) { ignoredJudges.Add("giữa");  ignoredJudgeNames.Add(judgeMiddleName); }
-            if (IsJudgeIgnored(judgeRightName))  { ignoredJudges.Add("phải"); ignoredJudgeNames.Add(judgeRightName); }
+            if (IsJudgeIgnored(judgeLeftName)) { ignoredJudges.Add("trái"); ignoredJudgeNames.Add(judgeLeftName); }
+            if (IsJudgeIgnored(judgeMiddleName)) { ignoredJudges.Add("giữa"); ignoredJudgeNames.Add(judgeMiddleName); }
+            if (IsJudgeIgnored(judgeRightName)) { ignoredJudges.Add("phải"); ignoredJudgeNames.Add(judgeRightName); }
+
+            // Fallback: Nếu không tìm thấy 3 tên mặc định, lấy tất cả target bị bỏ rơi
+            if (ignoredJudges.Count == 0)
+            {
+                foreach (var kvp in trackingStates)
+                {
+                    if (kvp.Value.continuousIgnoredTime >= judgeIgnoreWarningThreshold)
+                    {
+                        ignoredJudges.Add(GetDisplayName(kvp.Key));
+                        ignoredJudgeNames.Add(kvp.Key);
+                    }
+                }
+            }
 
             if (ignoredJudges.Count > 0)
             {
-                string positions = string.Join("/", ignoredJudges);
-                liveAdviceTextUI.text = $"Bạn đang không nhìn vào giám khảo ở {positions}, hãy nhìn vào giám khảo!";
-                liveAdviceTextUI.color = Color.white;
-                liveAdviceCanvas.SetActive(true);  
-
-                isWarningActive = true;
-                currentWarningTargets = ignoredJudgeNames;
+                if (VRWarningHUD.Instance != null)
+                {
+                    string positions = string.Join("/", ignoredJudges);
+                    string msg = "Bạn đang không nhìn vào giám khảo ở " + positions + ", hãy nhìn vào giám khảo!";
+                    Debug.Log("🔔 [Gaze Alert - Defense]: Đang hiện cảnh báo lên HUD");
+                    VRWarningHUD.Instance.ShowWarning(msg, Color.yellow);
+                    isWarningActive = true;
+                    currentWarningTargets = ignoredJudgeNames;
+                }
+                else
+                {
+                    Debug.LogWarning("⚠️ [Gaze Logic]: Cần hiện cảnh báo nhưng không tìm thấy VRWarningHUD.Instance trong Scene!");
+                }
                 return;
             }
         }
 
-        // ===== NormalClass: NPC bị bỏ qua, ngưỡng 60 giây =====
         if (currentRoomType == RoomType.NormalClass)
         {
             List<string> ignoredNpcs = new List<string>();
-
             foreach (var kvp in trackingStates)
             {
                 if (kvp.Value.continuousIgnoredTime >= continuousIgnoreWarningThreshold)
@@ -262,41 +273,41 @@ public class GazeTrackingManager : MonoBehaviour
 
             if (ignoredNpcs.Count > 0)
             {
-                liveAdviceTextUI.text = "Bạn đang chưa quan sát đều cả lớp, hãy chú ý quan sát nhé!";
-                liveAdviceTextUI.color = Color.white;
-                liveAdviceCanvas.SetActive(true);
-
-                isWarningActive = true;
-                currentWarningTargets = ignoredNpcs;
+                if (VRWarningHUD.Instance != null)
+                {
+                    Debug.Log("⚠️ [Gaze Logic]: Đã phát hiện " + ignoredNpcs.Count + " NPC bị bỏ rơi quá 10s!");
+                    string msg = "Bạn đang chưa quan sát đều cả lớp, hãy chú ý quan sát nhé!";
+                    Debug.Log("🔔 [Gaze Alert - Normal]: Đang hiện cảnh báo lên HUD");
+                    VRWarningHUD.Instance.ShowWarning(msg, Color.yellow);
+                    isWarningActive = true;
+                    currentWarningTargets = ignoredNpcs;
+                }
+                else
+                {
+                    Debug.LogWarning("⚠️ [Gaze Logic]: Cần hiện cảnh báo nhưng không tìm thấy VRWarningHUD.Instance trong Scene!");
+                }
                 return;
             }
         }
-
-        // Không có cảnh báo → ẩn UI
-        liveAdviceCanvas.SetActive(false);
     }
 
     private bool IsJudgeIgnored(string judgeName)
     {
         if (string.IsNullOrEmpty(judgeName)) return false;
         if (!trackingStates.ContainsKey(judgeName)) return false;
-
         return trackingStates[judgeName].continuousIgnoredTime >= judgeIgnoreWarningThreshold;
     }
 
     private bool HasUserLookedAtWarningTargets()
     {
         if (currentWarningTargets.Count == 0) return false;
-
         foreach (string targetName in currentWarningTargets)
         {
             if (trackingStates.ContainsKey(targetName))
             {
-                if (trackingStates[targetName].continuousIgnoredTime < 0.5f)
-                    return true;
+                if (trackingStates[targetName].continuousIgnoredTime < 0.5f) return true;
             }
         }
-
         return false;
     }
 
@@ -304,49 +315,42 @@ public class GazeTrackingManager : MonoBehaviour
     {
         isWarningActive = false;
         currentWarningTargets.Clear();
-        liveAdviceCanvas.SetActive(false);
     }
 
-    public void StartTracking()
+    public void StartTracking(Transform roomParent, RoomType roomType)
     {
+        this.activeRoomParent = roomParent;
+        this.currentRoomType = roomType;
+
         if (activeRoomParent == null) return;
 
-        isWarningActive = false;
-        currentWarningTargets.Clear();
-
-        if (liveAdviceTextUI != null && liveAdviceCanvas != null)
-        {
-            liveAdviceTextUI.text = "";
-            liveAdviceCanvas.SetActive(false);
-        }
-
+        isTracking = true;
         totalPresentationTime = 0f;
         trackingStates.Clear();
         targetColliders.Clear();
+        isWarningActive = false;
 
         Transform[] allChildren = activeRoomParent.GetComponentsInChildren<Transform>(true);
         foreach (Transform child in allChildren)
         {
-            if (child.CompareTag("NPC_Face") || child.CompareTag("Judge"))
+            // Kiểm tra theo Tag HOẶC theo tên (nếu lỡ quên gắn tag)
+            bool isTarget = child.CompareTag("NPC_Face") || 
+                            child.name.ToLower().Contains("target") || 
+                            child.name.ToLower().Contains("npc") || 
+                            child.name.ToLower().Contains("face");
+
+            if (isTarget)
             {
-                Collider col = child.GetComponent<Collider>();
+                // Chỉ lấy những cái có Collider (vì cần Raycast/Distance check)
+                var col = child.GetComponent<Collider>();
                 if (col != null)
                 {
-                    if (!trackingStates.ContainsKey(child.name))
-                    {
-                        trackingStates.Add(child.name, new TargetTrackingState());
-                        targetColliders.Add(child.name, col);
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning($"[Eye-Tracking] Khán giả {child.name} có tag NPC_Face nhưng CHƯA CÓ COLLIDER!");
+                    trackingStates[child.name] = new TargetTrackingState();
+                    targetColliders[child.name] = col;
                 }
             }
         }
-
-        isTracking = true;
-        Debug.Log($"[Eye-Tracking] BẮT ĐẦU. Góc nhìn (FOV): {fieldOfViewAngle} độ.");
+        Debug.Log("👀 GazeTracking: Bắt đầu tracking tại " + activeRoomParent.name + " (" + trackingStates.Count + " targets)");
     }
 
     public void PauseTracking() => isTracking = false;
@@ -360,6 +364,7 @@ public class GazeTrackingManager : MonoBehaviour
     {
         isTracking = false;
         SaveReportToJSON();
+        Debug.Log("🛑 GazeTracking: Đã dừng tracking và lưu báo cáo.");
     }
 
     public PresentationEvaluationReport GetCurrentReport()
@@ -397,13 +402,9 @@ public class GazeTrackingManager : MonoBehaviour
     private void SaveReportToJSON()
     {
         if (totalPresentationTime <= 0) return;
-
         PresentationEvaluationReport report = GetCurrentReport();
-
-        // Tên file cố định để luôn tự động Override file cũ
         string fileName = "EyeContact_Latest_Report.json";
         string filePath = Path.Combine(Application.persistentDataPath, fileName);
-
         File.WriteAllText(filePath, JsonUtility.ToJson(report, true));
     }
 }

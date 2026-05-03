@@ -2,6 +2,7 @@ from typing import List
 import io
 from datetime import datetime
 from collections import defaultdict
+from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File, Query, Request
 from fastapi.responses import StreamingResponse
@@ -9,7 +10,6 @@ from app.services.workflow import (
     process_generate_questions,
     process_batch_transcribe,
     process_evaluate,
-    process_evaluate_content,
 )
 from app.schemas import (
     GenerateQuestionResponse,
@@ -22,9 +22,7 @@ router = APIRouter()
 
 
 @router.post("/generate-question", response_model=GenerateQuestionResponse)
-async def generate_question_endpoint(
-    session_id: str, audio_file: UploadFile = File(...), mode: str = "practice"
-):
+async def generate_question_endpoint(session_id: str, audio_file: UploadFile = File(...), mode: str = "practice"):
     """
     API Sinh câu hỏi phản biện.
     Đóng vai giám khảo/khán giả đặt câu hỏi dựa trên Context gốc và đoạn vừa trình bày.
@@ -35,9 +33,7 @@ async def generate_question_endpoint(
 @router.post("/submit", response_model=BatchTranscriptResponse)
 async def batch_transcribe_endpoint(
     session_id: str = Query(..., description="Session ID"),
-    audio_files: List[UploadFile] = File(
-        ..., description="Danh sách file audio (Question_1.mp4, Question_2.mp4...)"
-    ),
+    audio_files: List[UploadFile] = File(..., description="Danh sách file audio (Question_1.mp4, Question_2.mp4...)"),
 ):
     """
     API nhận nhiều file audio cùng lúc, transcript và lưu vào session.
@@ -75,7 +71,7 @@ async def evaluate_endpoint(request: EvaluateRequest):
     """
     API đánh giá toàn diện và xuất PDF:
     - Nhận các điểm đã chấm (time_management, eye_contact, volume)
-    - Tự động chấm điểm nội dung (AC1)
+    - Tự động chấm điểm nội dung (AC1, AC2, AC3)
     - Tự động tính số câu hỏi đã trả lời từ session
     - Xuất PDF báo cáo chi tiết
     """
@@ -87,32 +83,25 @@ async def evaluate_endpoint(request: EvaluateRequest):
 
         raise HTTPException(status_code=404, detail="Session không tìm thấy")
 
-    context = session_data.get("context", "")
-    presentation_transcript = session_data.get("presentation_transcript", "")
-
     # Tự động tính số câu hỏi đã trả lời
     questions = session_data.get("questions", {})
-    answered_questions = sum(
-        1 for q in questions.values() if q.get("answer", "").strip()
-    )
+    answered_questions = sum(1 for q in questions.values() if q.get("answer", "").strip())
 
-    content_result = await process_evaluate_content(context, presentation_transcript)
+    # Gọi process_evaluate để lấy AC1, AC2, AC3
+    evaluation_result = await process_evaluate(request.session_id)
+
+    # Điểm nội dung tổng hợp = trung bình AC1 + AC2 + AC3
+    content_total = (evaluation_result.ac1_score + evaluation_result.ac2_score + evaluation_result.ac3_score) / 3
 
     total_score = round(
-        (
-            content_result["score"]
-            + request.time_management_score
-            + request.eye_contact_score
-            + request.volume_score
-        )
-        / 4,
+        (content_total + request.time_management_score + request.eye_contact_score + request.volume_score) / 4,
         1,
     )
 
     pdf_bytes = generate_pdf_report(
         session_data=session_data,
         request=request,
-        content_result=content_result,
+        evaluation_result=evaluation_result,
         total_score=total_score,
         answered_questions=answered_questions,
     )
@@ -120,15 +109,11 @@ async def evaluate_endpoint(request: EvaluateRequest):
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": f"attachment; filename=evaluation_{request.session_id}.pdf"
-        },
+        headers={"Content-Disposition": f"attachment; filename=evaluation_{request.session_id}.pdf"},
     )
 
 
-def generate_pdf_report(
-    session_data, request, content_result, total_score, answered_questions
-) -> bytes:
+def generate_pdf_report(session_data, request, evaluation_result, total_score, answered_questions) -> bytes:
     import io
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.pdfgen import canvas
@@ -141,17 +126,23 @@ def generate_pdf_report(
     import numpy as np
 
     # Register Vietnamese font
+    font_name = "Helvetica"
+    font_bold = "Helvetica-Bold"
     try:
-        pdfmetrics.registerFont(TTFont("DejaVu", "DejaVuSans.ttf"))
-        pdfmetrics.registerFont(TTFont("DejaVu-Bold", "DejaVuSans-Bold.ttf"))
-        font_name = "DejaVu"
-        font_bold = "DejaVu-Bold"
-    except:
-        font_name = "Helvetica"
-        font_bold = "Helvetica-Bold"
+        backend_dir = Path(__file__).parent.parent.parent
+        dejavu_path = backend_dir / "DejaVuSans.ttf"
+        dejavu_bold_path = backend_dir / "DejaVuSans-Bold.ttf"
+        if dejavu_path.exists() and dejavu_bold_path.exists():
+            pdfmetrics.registerFont(TTFont("DejaVu", str(dejavu_path)))
+            pdfmetrics.registerFont(TTFont("DejaVu-Bold", str(dejavu_bold_path)))
+            font_name = "DejaVu"
+            font_bold = "DejaVu-Bold"
+        else:
+            print(f"Font files not found. DejaVu: {dejavu_path.exists()}, Bold: {dejavu_bold_path.exists()}")
+    except Exception as e:
+        print(f"Font load error: {e}")
 
     buffer = io.BytesIO()
-    # Dùng kích thước slide 16:9 chuẩn (16x9 inch)
     page_width = 1152  # 16 inch
     page_height = 648  # 9 inch
 
@@ -159,16 +150,11 @@ def generate_pdf_report(
 
     # ========== TRANG 1: HEADER + ĐIỂM (TRÁI) + CHART (PHẢI) ==========
     c.setFont(font_bold, 40)
-    c.drawCentredString(
-        page_width / 2, page_height - 60, "BÁO CÁO ĐÁNH GIÁ THUYẾT TRÌNH"
-    )
+    c.drawCentredString(page_width / 2, page_height - 60, "BÁO CÁO ĐÁNH GIÁ THUYẾT TRÌNH")
 
-    # BÊN TRÁI: Card Header (AC1.2)
     left_x = 60
     c.setFont(font_bold, 24)
-    c.drawString(
-        left_x, page_height - 120, f"Chủ đề: {session_data.get('title', 'N/A')}"
-    )
+    c.drawString(left_x, page_height - 120, f"Chủ đề: {session_data.get('title', 'N/A')}")
     c.setFont(font_bold, 20)
     c.drawString(
         left_x,
@@ -181,7 +167,7 @@ def generate_pdf_report(
         f"Q&A: {request.qa_duration}s | Câu trả lời: {answered_questions}",
     )
 
-    # Điểm tổng kết (AC1.3) - bên trái
+    # Điểm tổng kết
     c.setFillColor(colors.HexColor("#4a7ff7"))
     c.setFont(font_bold, 80)
     c.drawString(left_x, page_height - 300, f"{total_score}")
@@ -189,17 +175,15 @@ def generate_pdf_report(
     c.setFont(font_bold, 24)
     c.drawString(left_x, page_height - 340, "Điểm tổng kết")
 
-    # ========== BIỂU ĐỒ RADAR (AC1.4) ==========
-    # Vẽ radar chart bằng matplotlib - màu xanh lá, đậm nét
+    # ========== BIỂU ĐỒ RADAR ==========
     labels = ["Nội dung", "Tương tác mắt", "Âm lượng", "Quản lý thời gian"]
     stats = [
-        content_result["score"],
+        evaluation_result.ac1_score,
         request.eye_contact_score,
         request.volume_score,
         request.time_management_score,
     ]
 
-    # Tạo radar chart
     angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
     stats += stats[:1]
     angles += angles[:1]
@@ -212,26 +196,21 @@ def generate_pdf_report(
     ax.set_ylim(0, 100)
     ax.set_yticks([20, 40, 60, 80, 100])
     ax.tick_params(axis="y", labelsize=16)
-    # Set bold cho nhãn trục y
     for label in ax.get_yticklabels():
         label.set_fontweight("bold")
     ax.grid(True, linewidth=1.5)
 
-    # Lưu radar chart vào buffer
     img_buffer = io.BytesIO()
     plt.savefig(img_buffer, format="PNG", bbox_inches="tight")
     plt.close(fig)
     img_buffer.seek(0)
 
-    # Vẽ ảnh radar vào PDF - bên PHẢI
-    from reportlab.lib.utils import ImageReader
-
     img_reader = ImageReader(img_buffer)
-    right_x = page_width - 15 * cm  # Cách lề phải 15cm
+    right_x = page_width - 15 * cm
     c.drawImage(
         img_reader,
         right_x,
-        page_height / 2 - 6 * cm,  # Canh giữa theo chiều dọc
+        page_height / 2 - 6 * cm,
         width=12 * cm,
         height=12 * cm,
     )
@@ -242,15 +221,9 @@ def generate_pdf_report(
     c.setFont(font_bold, 32)
     c.drawCentredString(page_width / 2, page_height - 3 * cm, "CHI TIẾT ĐÁNH GIÁ MẮT")
 
-    # Group zones by target name
-    zone_labels = (
-        request.eye_contact_zone_names
-        if request.eye_contact_zone_names
-        else ["Trái trước", "Phải trước", "Trái sau", "Phải sau"]
-    )
+    zone_labels = request.eye_contact_zone_names if request.eye_contact_zone_names else ["Trái trước", "Phải trước", "Trái sau", "Phải sau"]
     zones = request.eye_contact_zones
 
-    # Group by target - extract target name
     target_groups = defaultdict(list)
     for label, pct in zip(zone_labels, zones):
         if " - " in label:
@@ -262,30 +235,25 @@ def generate_pdf_report(
             zone_name = label
         target_groups[target_name].append((zone_name, pct))
 
-    # Colors for different targets
     target_colors = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0", "#F44336"]
 
-    # Layout settings
     margin_left = 2 * cm
     card_width = page_width - 4 * cm
     y_pos = page_height - 6 * cm
     card_padding = 0.5 * cm
-    zone_height = 1 * cm
+    zone_height = 1.5 * cm
     header_height = 0.8 * cm
     gap_between_cards = 1 * cm
 
     for idx, (target_name, zone_list) in enumerate(target_groups.items()):
         color = colors.HexColor(target_colors[idx % len(target_colors)])
 
-        # Calculate card height
         card_height = header_height + len(zone_list) * zone_height + 2 * card_padding
 
-        # Check if need new page
         if y_pos - card_height < 3 * cm:
             c.showPage()
             y_pos = page_height - 3 * cm
 
-        # Draw card background with light color
         c.setFillColor(colors.HexColor("#F5F5F5"))
         c.setStrokeColor(color)
         c.setLineWidth(1.5)
@@ -298,7 +266,6 @@ def generate_pdf_report(
             fill=True,
         )
 
-        # Draw target header
         c.setFillColor(color)
         c.rect(
             margin_left,
@@ -310,42 +277,41 @@ def generate_pdf_report(
         )
         c.setFillColor(colors.white)
         c.setFont(font_bold, 18)
-        c.drawString(
-            margin_left + 0.3 * cm, y_pos - header_height + 0.25 * cm, f"{target_name}"
-        )
+        c.drawString(margin_left + 0.3 * cm, y_pos - header_height + 0.25 * cm, f"{target_name}")
         c.setFillColor(colors.black)
         y_pos -= header_height + card_padding
 
-        # Draw zones
-        bar_width_max = card_width - 8 * cm
         for zone_name, pct in zone_list:
-            c.setFont(font_name, 16)
-            c.drawString(margin_left + 0.5 * cm, y_pos, f"{zone_name}")
-
-            # Percentage on right
-            c.drawRightString(margin_left + 7.5 * cm, y_pos, f"{pct:.1f}%")
-
-            # Progress bar
-            bar_x = margin_left + 8 * cm
-            c.setFillColor(colors.HexColor("#E0E0E0"))
-            c.rect(bar_x, y_pos - 4, bar_width_max, 10, fill=True, stroke=False)
-            c.setFillColor(color)
-            bar_width = (pct / 100) * bar_width_max
-            c.rect(bar_x, y_pos - 4, bar_width, 10, fill=True, stroke=False)
+            zone_card_height = 1.2 * cm
+            c.setFillColor(colors.HexColor("#F0F0F0"))
+            c.setStrokeColor(color)
+            c.setLineWidth(0.5)
+            c.rect(
+                margin_left + 0.3 * cm,
+                y_pos - zone_card_height + 0.2 * cm,
+                card_width - 0.6 * cm,
+                zone_card_height,
+                fill=True,
+                stroke=True,
+            )
+            c.setFont(font_bold, 15)
             c.setFillColor(colors.black)
-
-            y_pos -= zone_height
+            c.drawString(margin_left + 0.6 * cm, y_pos - 0.25 * cm, f"{zone_name}")
+            c.setFont(font_name, 13)
+            c.setFillColor(color)
+            c.drawString(margin_left + 0.6 * cm, y_pos - 0.75 * cm, f"{pct:.1f}%")
+            c.setFillColor(colors.black)
+            c.setLineWidth(1.5)
+            y_pos -= zone_card_height + 0.2 * cm
 
         y_pos -= card_padding + gap_between_cards
 
-    # Draw advice at bottom
     y_pos -= 0.5 * cm
     if y_pos < 3 * cm:
         c.showPage()
         y_pos = page_height - 3 * cm
 
     c.setFont(font_bold, 16)
-    # Word wrap the advice text
     advice_text = request.eye_contact_advice
     text_obj = c.beginText(margin_left, y_pos)
     text_obj.setFont(font_name, 14)
@@ -353,8 +319,9 @@ def generate_pdf_report(
     words = advice_text.split()
     line = ""
     for word in words:
-        if len(line + " " + word) * 8 < card_width:
-            line = line + " " + word if line else word
+        test_line = line + " " + word if line else word
+        if len(test_line) * 8 < card_width:
+            line = test_line
         else:
             text_obj.textLine(line)
             line = word
@@ -362,39 +329,11 @@ def generate_pdf_report(
         text_obj.textLine(line)
     c.drawText(text_obj)
 
-    # ========== TRANG 3: CHI TIẾT ĐÁNH GIÁ NỘI DUNG ==========
-    c.showPage()
-
-    c.setFont(font_bold, 32)
-    c.drawCentredString(
-        page_width / 2, page_height - 3 * cm, "CHI TIẾT ĐÁNH GIÁ NỘI DUNG"
-    )
-
-    y_pos = page_height - 6 * cm
-    c.setFont(font_bold, 24)
-    c.drawString(2 * cm, y_pos, f"Điểm nội dung: {content_result['score']}/100")
-    y_pos -= 2 * cm
-
-    c.setFont(font_bold, 24)
-    c.drawString(2 * cm, y_pos, "Đánh giá từ khóa:")
-    y_pos -= 1.5 * cm
-    c.setFont(font_bold, 18)
-    for kw in content_result.get("keywords", []):
-        status_text = {
-            "found": "Tìm thấy",
-            "paraphrased": "Paraphrased",
-            "missing": "Thiếu",
-        }.get(kw["status"], kw["status"])
-        c.drawString(3 * cm, y_pos, f"• {kw['keyword']}: {status_text}")
-        y_pos -= 1 * cm
-
     # ========== TRANG 4: CHI TIẾT ĐÁNH GIÁ ÂM LƯỢNG ==========
     c.showPage()
 
     c.setFont(font_bold, 32)
-    c.drawCentredString(
-        page_width / 2, page_height - 3 * cm, "CHI TIẾT ĐÁNH GIÁ ÂM LƯỢNG"
-    )
+    c.drawCentredString(page_width / 2, page_height - 3 * cm, "CHI TIẾT ĐÁNH GIÁ ÂM LƯỢNG")
 
     y_pos = page_height - 6 * cm
     c.setFont(font_bold, 24)
@@ -412,25 +351,105 @@ def generate_pdf_report(
     c.showPage()
 
     c.setFont(font_bold, 32)
-    c.drawCentredString(
-        page_width / 2, page_height - 3 * cm, "CHI TIẾT ĐÁNH GIÁ THỜI GIAN"
-    )
+    c.drawCentredString(page_width / 2, page_height - 3 * cm, "CHI TIẾT ĐÁNH GIÁ THỜI GIAN")
 
     y_pos = page_height - 6 * cm
     c.setFont(font_bold, 24)
-    c.drawString(
-        2 * cm, y_pos, f"Điểm quản lý thời gian: {request.time_management_score}/100"
-    )
+    c.drawString(2 * cm, y_pos, f"Điểm quản lý thời gian: {request.time_management_score}/100")
     y_pos -= 2 * cm
 
     c.setFont(font_bold, 20)
-    c.drawString(
-        2 * cm, y_pos, f"Thời gian trình bày: {request.presentation_duration}s"
-    )
+    c.drawString(2 * cm, y_pos, f"Thời gian trình bày: {request.presentation_duration}s")
     y_pos -= 1.5 * cm
     c.drawString(2 * cm, y_pos, f"Thời gian Q&A: {request.qa_duration}s")
     y_pos -= 1.5 * cm
     c.drawString(2 * cm, y_pos, f"Số câu hỏi đã trả lời: {answered_questions}")
+
+    # ========== TRANG 3: CHI TIẾT ĐÁNH GIÁ NỘI DUNG (AC1, AC2, AC3) ==========
+    c.showPage()
+
+    c.setFont(font_bold, 32)
+    c.drawCentredString(page_width / 2, page_height - 3 * cm, "CHI TIẾT ĐÁNH GIÁ NỘI DUNG")
+
+    y_pos = page_height - 6 * cm
+
+    # AC1 - Nội dung
+    c.setFont(font_bold, 24)
+    c.drawString(2 * cm, y_pos, f"AC1 - Nội dung: {evaluation_result.ac1_score}/100")
+    y_pos -= 1.5 * cm
+
+    c.setFont(font_bold, 20)
+    c.drawString(2 * cm, y_pos, "Đánh giá từ khóa:")
+    y_pos -= 1.2 * cm
+    c.setFont(font_name, 16)
+    for kw in evaluation_result.ac1_keywords:
+        status_text = {
+            "found": "Tìm thấy",
+            "paraphrased": "Paraphrased",
+            "missing": "Thiếu",
+        }.get(kw.status, kw.status)
+        c.drawString(3 * cm, y_pos, f"• {kw.keyword}: {status_text}")
+        y_pos -= 0.8 * cm
+
+    # AC2 - Cấu trúc
+    y_pos -= 1 * cm
+    c.setFont(font_bold, 24)
+    c.drawString(2 * cm, y_pos, f"AC2 - Cấu trúc: {evaluation_result.ac2_score}/100")
+    y_pos -= 1.5 * cm
+
+    c.setFont(font_name, 16)
+    c.drawString(3 * cm, y_pos, f"Mở đầu: {'Có' if evaluation_result.ac2_has_intro else 'Không'}")
+    y_pos -= 0.8 * cm
+    c.drawString(
+        3 * cm,
+        y_pos,
+        f"Kết luận: {'Có' if evaluation_result.ac2_has_closing else 'Không'}",
+    )
+    y_pos -= 0.8 * cm
+    c.drawString(2 * cm, y_pos, f"Nhận xét: {evaluation_result.ac2_feedback}")
+    y_pos -= 1.2 * cm
+
+    # AC3 - Q&A (hiển thị chi tiết từng câu kèm feedback)
+    c.setFont(font_bold, 24)
+    c.drawString(2 * cm, y_pos, f"AC3 - Q&A: {evaluation_result.ac3_score}/100")
+    y_pos -= 2 * cm
+
+    detailed_qa = evaluation_result.detailed_qa
+    for qa in detailed_qa:
+        # Mỗi câu Q&A sang trang mới để dễ đọc
+        c.showPage()
+        y_pos = page_height - 3 * cm
+
+        c.setFont(font_bold, 18)
+        c.drawString(
+            2 * cm,
+            y_pos,
+            f"Câu {qa.question_id}: Điểm {qa.score}/100 (Khớp {qa.content_match_percent}%)",
+        )
+        y_pos -= 1.5 * cm
+
+        # Hiển thị feedback của câu hỏi
+        c.setFont(font_bold, 14)
+        c.drawString(2 * cm, y_pos, "Nhận xét:")
+        y_pos -= 1 * cm
+
+        c.setFont(font_name, 11)
+        text_obj = c.beginText(2 * cm, y_pos)
+        text_obj.setFont(font_name, 11)
+        text_obj.setLeading(14)
+        words = qa.feedback.split()
+        current_line = ""
+        for word in words:
+            test = current_line + " " + word if current_line else word
+            if len(test) < 80:
+                current_line = test
+            else:
+                text_obj.textLine(current_line)
+                current_line = word
+        if current_line:
+            text_obj.textLine(current_line)
+        c.drawText(text_obj)
+        y_pos -= 1 * cm
 
     c.save()
     return buffer.getvalue()

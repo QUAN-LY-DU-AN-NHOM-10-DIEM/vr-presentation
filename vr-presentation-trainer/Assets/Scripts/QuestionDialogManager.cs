@@ -3,6 +3,10 @@ using TMPro;
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// Quản lý giao diện hộp thoại câu hỏi trong phòng thuyết trình.
+/// Tương tác trực tiếp với GameController để đồng bộ trạng thái.
+/// </summary>
 [RequireComponent(typeof(CanvasGroup))]
 public class QuestionDialogManager : MonoBehaviour
 {
@@ -10,41 +14,32 @@ public class QuestionDialogManager : MonoBehaviour
 
     [Header("UI References")]
     public TextMeshProUGUI questionTextUI;
-    [Tooltip("Text này giờ sẽ gánh luôn cả Nhiệm vụ Status và Đếm ngược")]
     public TextMeshProUGUI statusTextUI;
-    [Tooltip("Dùng để hiển thị: Câu 1/10")]
     public TextMeshProUGUI progressTextUI;
+    public GameObject questionCanvas; // Canvas chứa các chữ câu hỏi
+    public GameObject reportObject;   // Object chứa PDF Viewer kết quả
 
     private CanvasGroup canvasGroup;
 
     [Header("Settings")]
     public float preparationTime = 15f;
     public float fadeDuration = 0.5f;
-
+    
     private List<string> currentQuestionList = new List<string>();
-    private int currentQuestionIndex = 0;
-    private bool isRecordingPhase = false; // Cờ kiểm soát việc ghi âm để tránh lỗi "No audio to save"
+    // Loại bỏ biến local để dùng chung với GameController
+    // private int currentQuestionIndex = 0; 
 
-    // Quản lý chặt chẽ các Coroutine đang chạy
-    private Coroutine currentTimerRoutine;
-    private Coroutine currentFadeRoutine;
+    private Coroutine countdownCoroutine; // Để có thể dừng Coroutine khi Skip
+    private Coroutine fadeCoroutine;      // Để quản lý hiệu ứng ẩn/hiện bảng
 
-    [Header("Dependencies")]
-    public PauseMenuManager pauseMenuManager;
-    public NpcManager npcManager;
-
-    [Header("Room Setup (Vị trí hiển thị UI)")]
-    public ModeManager modeManager; // Để biết đang ở phòng nào
-    [Tooltip("Kéo Empty GameObject chứa tọa độ UI phòng Normal vào đây")]
+    [Header("Room Setup")]
+    public ModeManager modeManager;
     public Transform normalRoomAnchor;
-    [Tooltip("Kéo Empty GameObject chứa tọa độ UI phòng Defense vào đây")]
     public Transform defenseRoomAnchor;
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
-        else Destroy(gameObject); // Đảm bảo chỉ có 1 instance tồn tại
-
         canvasGroup = GetComponent<CanvasGroup>();
     }
 
@@ -55,141 +50,129 @@ public class QuestionDialogManager : MonoBehaviour
         canvasGroup.blocksRaycasts = false;
     }
 
-    // ==========================================
-    // HÀM MỚI: TỰ ĐỘNG DỊCH CHUYỂN UI VỀ ĐÚNG PHÒNG
-    // ==========================================
     private void RepositionUIToCurrentRoom()
     {
         if (modeManager == null) return;
-
-        // Dựa vào mode để chọn điểm neo (giống logic bên NpcManager của bạn)
         Transform targetAnchor = (modeManager.selectedMode == "Defense") ? defenseRoomAnchor : normalRoomAnchor;
-
-        if (targetAnchor != null)
+        if (targetAnchor != null) 
         {
-            // Bê nguyên cái Canvas này đặt vào tọa độ và góc xoay của điểm neo
+            Debug.Log($"[UI Reposition] Moving {gameObject.name} to {targetAnchor.name} at {targetAnchor.position}");
             transform.position = targetAnchor.position;
         }
     }
 
+    /// <summary>
+    /// Bắt đầu phiên Q&A với danh sách câu hỏi từ API.
+    /// </summary>
     public void StartQuestionSession(List<string> questions)
     {
         if (questions == null || questions.Count == 0) return;
-
         currentQuestionList = questions;
-        currentQuestionIndex = 0;
 
-        RepositionUIToCurrentRoom(); // Dịch chuyển UI trước khi bật lên
+        if (NpcManager.Instance != null) NpcManager.Instance.PrepareNpcQueue();
+
+        ShowQuestionUI(); // Đảm bảo hiện bảng câu hỏi, ẩn bảng report
+        RepositionUIToCurrentRoom();
         TriggerFadeUI(1f);
+        StartNextQuestionFlow();
+    }
+
+    private void StartNextQuestionFlow()
+    {
+        GameController.Instance.StartNextQuestion(currentQuestionList);
         DisplayCurrentQuestion();
     }
 
     private void DisplayCurrentQuestion()
     {
-        isRecordingPhase = false; // Reset cờ ghi âm
+        if (NpcManager.Instance != null) NpcManager.Instance.GetNextNPC();
 
-        if (npcManager != null) npcManager.GetNextNPC();
-
-        string currentQ = currentQuestionList[currentQuestionIndex];
-        if (questionTextUI != null) questionTextUI.text = $"\"{currentQ}\"";
-
-        if (progressTextUI != null)
-        {
-            progressTextUI.text = $"Câu {currentQuestionIndex + 1} / {currentQuestionList.Count}";
-        }
-
-        if (statusTextUI != null)
-        {
-            statusTextUI.text = $"Chuẩn bị trả lời... ({preparationTime:0}s)";
-            statusTextUI.color = Color.white;
-        }
-
-        if (currentTimerRoutine != null) StopCoroutine(currentTimerRoutine);
-        currentTimerRoutine = StartCoroutine(PreparationCountdown());
+        int currentIndex = GameController.Instance.CurrentQuestionIndex;
+        string currentQ = currentQuestionList[currentIndex];
+        questionTextUI.text = $"\"{currentQ}\"";
+        progressTextUI.text = $"Câu {currentIndex + 1} / {currentQuestionList.Count}";
+        
+        if (countdownCoroutine != null) StopCoroutine(countdownCoroutine);
+        countdownCoroutine = StartCoroutine(PreparationCountdown());
     }
 
-    public void NextQuestion()
+    public void SkipPreparation()
     {
-        // CHỈ LƯU FILE NẾU ĐÃ QUA THỜI GIAN ĐẾM NGƯỢC
-        if (isRecordingPhase)
-        {
-            if (pauseMenuManager != null) pauseMenuManager.SaveRecordingQuestionToFile(currentQuestionIndex);
-        }
-
-        currentQuestionIndex++;
-
-        if (currentQuestionIndex < currentQuestionList.Count)
-        {
-            RepositionUIToCurrentRoom(); // Chắc cú đặt lại vị trí
-            TriggerFadeUI(1f);
-            DisplayCurrentQuestion();
-        }
-        else
-        {
-            EndSession();
-        }
+        // Hàm này giờ sẽ gọi chung logic chuyển câu hỏi
+        OnFinishAnswerClicked();
     }
 
     private IEnumerator PreparationCountdown()
     {
-        float timeLeft = preparationTime;
+        float t = preparationTime;
 
-        while (timeLeft > 0)
+        while (t > 0)
         {
-            if (statusTextUI != null)
-            {
-                statusTextUI.text = $"Chuẩn bị trả lời... ({Mathf.CeilToInt(timeLeft)}s)";
-                statusTextUI.color = (timeLeft <= 3f) ? new Color(1f, 0.4f, 0.4f) : Color.white;
-            }
-
-            yield return new WaitForSeconds(1f);
-            timeLeft -= 1f;
+            statusTextUI.text = $"Chuẩn bị trả lời trong: {Mathf.CeilToInt(t)}s";
+            statusTextUI.color = (t <= 3f) ? Color.red : Color.white;
+            yield return null;
+            t -= Time.deltaTime;
         }
 
-        if (statusTextUI != null)
-        {
-            statusTextUI.text = "BẮT ĐẦU GHI ÂM!";
-            statusTextUI.color = Color.green;
-        }
-
-        isRecordingPhase = true; // Bật cờ cho phép lưu file
-
-        yield return new WaitForSeconds(2f);
-        if (pauseMenuManager != null) pauseMenuManager.TurnOnMic();
-
+        statusTextUI.text = "BẮT ĐẦU GHI ÂM!";
+        statusTextUI.color = Color.green;
+        
+        countdownCoroutine = null;
+        GameController.Instance.StartAnswering();
+        
+        // Ẩn bảng sau khi đọc xong để người dùng tập trung trả lời
         HideDialog();
     }
 
-    public void EndSession()
+    public void OnFinishAnswerClicked()
     {
-        isRecordingPhase = false;
-        if (currentTimerRoutine != null)
+        // 0. Nếu chưa có câu hỏi thì không cho bấm
+        if (currentQuestionList == null || currentQuestionList.Count == 0) return;
+
+        // 1. Dừng đếm ngược nếu đang trong phase chuẩn bị
+        if (countdownCoroutine != null)
         {
-            StopCoroutine(currentTimerRoutine);
-            currentTimerRoutine = null;
+            StopCoroutine(countdownCoroutine);
+            countdownCoroutine = null;
+            Debug.Log("[Q&A] Bỏ qua giai đoạn chuẩn bị hoặc bỏ qua câu hỏi.");
         }
 
-        if (pauseMenuManager != null) pauseMenuManager.EndQaAPhase();
+        // 2. Gọi GameController xử lý kết thúc (Lưu audio nếu đang ghi âm, hoặc chỉ dừng nếu đang đọc)
+        GameController.Instance.FinishAnswer();
+
+        // Không tăng index ở đây nữa vì GameController.StartNextQuestion sẽ tăng
+        int nextIndex = GameController.Instance.CurrentQuestionIndex + 1;
+        
+        if (nextIndex < currentQuestionList.Count)
+        {
+            TriggerFadeUI(1f);
+            StartNextQuestionFlow();
+        }
+        else
+        {
+            GameController.Instance.FinishAll();
+        }
+    }
+
+    public void OnFinishQnAClicked()
+    {
+        GameController.Instance.FinishAll();
     }
 
     public void HideDialog() => TriggerFadeUI(0f);
 
     private void TriggerFadeUI(float targetAlpha)
     {
-        if (currentFadeRoutine != null) StopCoroutine(currentFadeRoutine);
-        currentFadeRoutine = StartCoroutine(FadeUI(targetAlpha));
+        if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
+        fadeCoroutine = StartCoroutine(FadeUI(targetAlpha));
     }
 
     private IEnumerator FadeUI(float targetAlpha)
     {
         float startAlpha = canvasGroup.alpha;
         float time = 0;
-
-        if (targetAlpha > 0)
-        {
-            canvasGroup.interactable = true;
-            canvasGroup.blocksRaycasts = true;
-        }
+        canvasGroup.interactable = targetAlpha > 0;
+        canvasGroup.blocksRaycasts = targetAlpha > 0;
 
         while (time < fadeDuration)
         {
@@ -198,50 +181,56 @@ public class QuestionDialogManager : MonoBehaviour
             yield return null;
         }
         canvasGroup.alpha = targetAlpha;
-
-        if (targetAlpha == 0)
-        {
-            canvasGroup.interactable = false;
-            canvasGroup.blocksRaycasts = false;
-        }
     }
 
-    public void ShowLoadingState(string loadingMessage)
+    public void ShowLoadingState(string message)
     {
-        if (questionTextUI != null) questionTextUI.text = "";
-        if (progressTextUI != null) progressTextUI.text = "";
-        if (statusTextUI != null)
-        {
-            statusTextUI.text = loadingMessage;
-            statusTextUI.color = Color.white;
-        }
+        // Ẩn nội dung câu hỏi cũ
+        if (questionCanvas != null) questionCanvas.SetActive(false);
+        if (reportObject != null) reportObject.SetActive(false);
 
-        if (currentTimerRoutine != null) StopCoroutine(currentTimerRoutine);
-
-        RepositionUIToCurrentRoom(); // Dịch chuyển UI trước khi bật
+        questionTextUI.text = "";
+        progressTextUI.text = "";
+        statusTextUI.text = message;
+        statusTextUI.color = Color.white;
+        RepositionUIToCurrentRoom();
         TriggerFadeUI(1f);
     }
 
-    public void ShowErrorState(string errorMessage)
+    public void ShowErrorState(string error)
     {
-        if (questionTextUI != null) questionTextUI.text = "";
-        if (progressTextUI != null) progressTextUI.text = "";
-        if (statusTextUI != null)
-        {
-            statusTextUI.text = errorMessage;
-            statusTextUI.color = new Color(1f, 0.4f, 0.4f);
-        }
-
-        if (currentTimerRoutine != null) StopCoroutine(currentTimerRoutine);
-        currentTimerRoutine = StartCoroutine(AutoCloseError());
-
+        statusTextUI.text = error;
+        statusTextUI.color = Color.red;
         TriggerFadeUI(1f);
-        RepositionUIToCurrentRoom(); // Dịch chuyển UI trước khi bật
+        Invoke("HideDialog", 3f);
     }
 
-    private IEnumerator AutoCloseError()
+    public void ShowReportUI()
     {
-        yield return new WaitForSeconds(4f);
-        HideDialog();
+        // 1. Hủy tất cả các lệnh chạy ngầm
+        CancelInvoke();
+        StopAllCoroutines();
+        fadeCoroutine = null;
+        countdownCoroutine = null;
+        
+        // 2. Chuyển đổi Object
+        if (questionCanvas != null && questionCanvas != gameObject) 
+            questionCanvas.SetActive(false);
+            
+        if (reportObject != null) 
+            reportObject.SetActive(true);
+        
+        // 4. Ép hiển thị tuyệt đối
+        canvasGroup.alpha = 1f;
+        canvasGroup.interactable = true;
+        canvasGroup.blocksRaycasts = true;
+        
+        Debug.Log("[UI] Switched to Report Mode. Force visible. Alpha: " + canvasGroup.alpha);
+    }
+
+    public void ShowQuestionUI()
+    {
+        if (questionCanvas != null) questionCanvas.SetActive(true);
+        if (reportObject != null) reportObject.SetActive(false);
     }
 }

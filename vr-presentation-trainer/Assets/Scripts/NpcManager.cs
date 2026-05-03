@@ -1,93 +1,97 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.InputSystem;
 
+/// <summary>
+/// Quản lý nhóm NPC và điều phối việc đứng lên/ngồi xuống để hỏi câu hỏi (AC4-1).
+/// Sử dụng Singleton để truy cập nhanh từ QuestionDialogManager.
+/// </summary>
 public class NpcManager : MonoBehaviour
 {
-    [Header("References")]
+    public static NpcManager Instance { get; private set; }
+
+    [Header("Cấu hình")]
     public Transform normalHumansParent;
     public Transform defenseHumansParent;
     public ModeManager modeManager;
-
-    [Header("NPC Settings")]
     public int pickCount = 10;
 
     private Queue<Transform> npcQueue = new Queue<Transform>();
-    private bool isActive = false;
     private Transform currentNPC = null;
 
-    public void OnFinishButtonClick()
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+    }
+
+    /// <summary>
+    /// Khởi tạo hàng đợi NPC dựa trên phòng hiện tại.
+    /// Thường gọi khi kết thúc thuyết trình chính.
+    /// </summary>
+    public void PrepareNpcQueue()
     {
         npcQueue.Clear();
         currentNPC = null;
 
-        Transform humansParent = modeManager.selectedMode == "Defense" ? defenseHumansParent : normalHumansParent;
+        Transform humansParent = (modeManager != null && modeManager.selectedMode == "Defense") ? defenseHumansParent : normalHumansParent;
+        if (humansParent == null) return;
 
         List<Transform> allNPCs = new List<Transform>();
-        foreach (Transform child in humansParent)
-        {
-            allNPCs.Add(child);
-        }
+        foreach (Transform child in humansParent) allNPCs.Add(child);
 
         int count = Mathf.Min(pickCount, allNPCs.Count);
         List<Transform> shuffled = allNPCs.OrderBy(_ => Random.value).ToList();
 
-        for (int i = 0; i < count; i++)
-        {
-            npcQueue.Enqueue(shuffled[i]);
-        }
+        for (int i = 0; i < count; i++) npcQueue.Enqueue(shuffled[i]);
 
-        isActive = true;
-        Debug.Log($"Queue ready! ({npcQueue.Count} NPCs remaining)");
+        Debug.Log($"[NpcManager] Queue ready! ({npcQueue.Count} NPCs)");
     }
 
-    private void Update()
-    {
-        if (!isActive) return;
-
-        // Giữ lại phím Space để bạn dễ test thủ công trong Editor
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
-        {
-            GetNextNPC();
-        }
-    }
-
-    // Đã gom toàn bộ logic Animation vào hàm này
+    /// <summary>
+    /// Lấy NPC tiếp theo đứng dậy để đặt câu hỏi.
+    /// </summary>
     public Transform GetNextNPC()
     {
-        // 1. Nếu có NPC đang đứng trước đó, bắt nó ngồi xuống
+        // 1. Cho NPC cũ ngồi xuống
         if (currentNPC != null)
         {
-            Animator prevAnimator = currentNPC.GetComponent<Animator>();
-            if (prevAnimator != null)
-            {
-                prevAnimator.SetTrigger("SitDown");
-                Debug.Log($"{currentNPC.name} sat down.");
-            }
+            Animator prevAnim = currentNPC.GetComponentInChildren<Animator>();
+            if (prevAnim != null) prevAnim.SetTrigger("SitDown");
+            else Debug.LogWarning($"[NPC] {currentNPC.name} không có Animator để SitDown!");
         }
 
-        // 2. Lấy NPC tiếp theo từ hàng đợi
+        // 2. Lấy NPC mới
         if (npcQueue.Count > 0)
         {
             currentNPC = npcQueue.Dequeue();
-
-            // 3. Cho NPC mới đứng lên
-            Animator animator = currentNPC.GetComponent<Animator>();
-            if (animator != null)
+            Debug.Log($"[NPC] Đến lượt: {currentNPC.name} đứng lên hỏi.");
+            
+            Animator anim = currentNPC.GetComponentInChildren<Animator>();
+            if (anim != null)
             {
-                animator.SetTrigger("StandUp");
-                Debug.Log($"{currentNPC.name} stood up! ({npcQueue.Count} remaining)");
+                anim.SetTrigger("StandUp");
             }
-
+            else
+            {
+                Debug.LogError($"[NPC] {currentNPC.name} không có Animator để StandUp!");
+            }
+            
             return currentNPC;
         }
-
-        // 4. Nếu hàng đợi đã trống
-        isActive = false;
-        currentNPC = null;
-        Debug.Log("All NPCs are done!");
-
         return null;
+    }
+
+    /// <summary>
+    /// Cho NPC hiện tại ngồi xuống ngay lập tức.
+    /// </summary>
+    public void ResetCurrentNPC()
+    {
+        if (currentNPC != null)
+        {
+            Debug.Log($"[NPC] {currentNPC.name} ngồi xuống sau khi kết thúc trả lời.");
+            Animator anim = currentNPC.GetComponentInChildren<Animator>();
+            if (anim != null) anim.SetTrigger("SitDown");
+            currentNPC = null;
+        }
     }
 }

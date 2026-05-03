@@ -36,15 +36,11 @@ FALLBACK_QUESTIONS = [
 ]
 
 
-async def process_presentation_upload(
-    slide_file: UploadFile, script_file: Optional[UploadFile] = None
-) -> TopicResponse:
+async def process_presentation_upload(slide_file: UploadFile, script_file: Optional[UploadFile] = None) -> TopicResponse:
     if not slide_file.filename or not slide_file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Slide file must be PDF")
 
-    if script_file and (
-        not script_file.filename or not script_file.filename.endswith(".txt")
-    ):
+    if script_file and (not script_file.filename or not script_file.filename.endswith(".txt")):
         raise HTTPException(status_code=400, detail="Script file must be TXT")
 
     slide_text = await extract_pdf(slide_file)
@@ -74,9 +70,7 @@ async def process_presentation_upload(
     )
 
 
-async def process_generate_questions(
-    session_id: str, audio_file: UploadFile, mode: str
-) -> GenerateQuestionResponse:
+async def process_generate_questions(session_id: str, audio_file: UploadFile, mode: str) -> GenerateQuestionResponse:
     session_data = get_session(session_id)
     if not session_data:
         raise HTTPException(
@@ -123,9 +117,7 @@ async def process_generate_questions(
     return GenerateQuestionResponse(questions=final_questions)
 
 
-async def process_batch_transcribe(
-    session_id: str, audio_files: List[dict]
-) -> BatchTranscriptResponse:
+async def process_batch_transcribe(session_id: str, audio_files: List[dict]) -> BatchTranscriptResponse:
     session_data = get_session(session_id)
     if not session_data:
         raise HTTPException(
@@ -146,9 +138,7 @@ async def process_batch_transcribe(
         if len(speech.split()) < 5:
             speech = "Thí sinh trình bày rất ngắn, chưa rõ ràng ý chính."
 
-        results.append(
-            TranscriptResult(question_id=int(question_id), transcript=speech)
-        )
+        results.append(TranscriptResult(question_id=int(question_id), transcript=speech))
 
         questions_map[question_id] = {
             "question": questions_map.get(question_id, {}).get("question", ""),
@@ -173,9 +163,7 @@ async def process_evaluate(session_id: str) -> EvaluationResponse:
     presentation_transcript = session_data.get("presentation_transcript", "")
 
     ac1_result = await evaluate_ac1(context, presentation_transcript)
-    ac2_result = await evaluate_ac2(
-        presentation_transcript, len(presentation_transcript.split())
-    )
+    ac2_result = await evaluate_ac2(presentation_transcript, len(presentation_transcript.split()))
     ac3_result = await evaluate_ac3(questions)
 
     ac1_score = ac1_result["score"]
@@ -198,8 +186,3 @@ async def process_evaluate(session_id: str) -> EvaluationResponse:
         detailed_qa=ac3_result["detailed"],
         session_id=session_id,
     )
-
-
-async def process_evaluate_content(context: str, presentation_transcript: str):
-    """Chấm điểm nội dung (AC1 - từ khóa)"""
-    return await evaluate_ac1(context, presentation_transcript)

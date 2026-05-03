@@ -85,7 +85,9 @@ async def _call_llm(prompt: str) -> str:
         return content
 
     elif PROVIDER == "groq":
-        client = AsyncOpenAI(api_key=os.getenv("GROQ_API_KEY"), base_url="https://api.groq.com/openai/v1")
+        client = AsyncOpenAI(
+            api_key=os.getenv("GROQ_API_KEY"), base_url="https://api.groq.com/openai/v1"
+        )
         response = await client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
@@ -210,13 +212,17 @@ CẤU TRÚC JSON YÊU CẦU:
 
         # 2. Fallback: Parse bằng Regex nếu JSON hỏng nặng
         print("[clean_and_summarize] JSON parse failed, falling back to Regex...")
-        title_m = re.search(r"(?:\"title\"|Title)[\s:\"\']*([^\"\n]+)", raw_text, re.IGNORECASE)
+        title_m = re.search(
+            r"(?:\"title\"|Title)[\s:\"\']*([^\"\n]+)", raw_text, re.IGNORECASE
+        )
         desc_m = re.search(
             r"(?:\"description\"|Description)[\s:\"\']*([^\"\n]+)",
             raw_text,
             re.IGNORECASE,
         )
-        ctx_m = re.search(r"(?:\"context\"|Context)[^\n]*\n((?:[^\n]+\n?)+)", raw_text, re.IGNORECASE)
+        ctx_m = re.search(
+            r"(?:\"context\"|Context)[^\n]*\n((?:[^\n]+\n?)+)", raw_text, re.IGNORECASE
+        )
 
         title = title_m.group(1).strip() if title_m else "Untitled"
         description = desc_m.group(1).strip() if desc_m else ""
@@ -269,7 +275,9 @@ Ví dụ cấu trúc bạn cần tự tưởng tượng: Object -> chứa key "q
         # 1. Thử parse JSON trực tiếp trước (Nếu bạn đã bật JSON mode cho Groq)
         try:
             parsed_data = json.loads(raw_text)
-            if "questions" in parsed_data and isinstance(parsed_data["questions"], list):
+            if "questions" in parsed_data and isinstance(
+                parsed_data["questions"], list
+            ):
                 return [str(q).strip() for q in parsed_data["questions"][:10]]
         except json.JSONDecodeError:
             pass  # Chuyển sang fallback nếu JSON hỏng
@@ -288,13 +296,17 @@ Ví dụ cấu trúc bạn cần tự tưởng tượng: Object -> chứa key "q
         print("[generate_questions] JSON parse failed, falling back to Regex...")
 
         # Bắt danh sách đánh số: 1. Câu hỏi, 2) Câu hỏi... (Ưu tiên regex này hơn vì nó an toàn với nháy kép)
-        numbered_items = re.findall(r"(?:^\d+[\.\)]\s*|- \s*)(.+?)(?:\n|$)", raw_text, re.MULTILINE)
+        numbered_items = re.findall(
+            r"(?:^\d+[\.\)]\s*|- \s*)(.+?)(?:\n|$)", raw_text, re.MULTILINE
+        )
         if len(numbered_items) >= 3:
             return [q.strip().strip('",') for q in numbered_items[:10]]
 
         # Regex bắt chuỗi trong JSON (Chỉ dùng cuối cùng)
         quoted_items = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', raw_text)
-        filtered_items = [q for q in quoted_items if q.lower() != "questions" and len(q) > 15]
+        filtered_items = [
+            q for q in quoted_items if q.lower() != "questions" and len(q) > 15
+        ]
         if len(filtered_items) >= 3:
             return filtered_items[:10]
 
@@ -311,13 +323,15 @@ async def evaluate_ac1(context: str, answer_text: str) -> dict:
 Phân tích TÀI LIỆU GỐC và BÀI TRÌNH BÀY để trích xuất từ khóa.
 
 QUY TẮC BẮT BUỘC:
-1. Trích xuất đúng 10 TỪ KHÓA cốt lõi từ TÀI LIỆU GỐC bằng ngôn ngữ gốc.
-2. Đối chiếu với BÀI TRÌNH BÀY để đánh giá trạng thái.
-3. Không bao giờ dùng dấu nháy kép (") bên trong nội dung nhận xét.
+1. Trích xuất đúng 10 TỪ KHÓA cốt lõi từ TÀI LIỆU GỐC.
+2. Mỗi từ khóa PHẢI là tiếng Anh, kèm theo bản dịch tiếng Việt trong ngoặc đơn.
+   Ví dụ: "Boundary Value Analysis (Phân tích giá trị biên)".
+3. Đối chiếu với BÀI TRÌNH BÀY để đánh giá trạng thái.
+4. Không bao giờ dùng dấu nháy kép (") bên trong nội dung nhận xét.
 
 KỶ LUẬT ĐẦU RA (CHỈ XUẤT JSON):
 Tuyệt đối không giải thích, không dùng markdown. Bạn phải trả về một object JSON chứa đúng 4 trường (keys) sau:
-- "keywords": Là một mảng. Mỗi phần tử là một object chứa "keyword" (tên từ khóa) và "status" (chỉ được chọn 1 trong 3 giá trị: "found", "paraphrased", hoặc "missing").
+- "keywords": Là một mảng. Mỗi phần tử là một object chứa "keyword" (tên từ khóa tiếng Anh kèm dịch tiếng Việt) và "status" (chỉ được chọn 1 trong 3 giá trị: "found", "paraphrased", hoặc "missing").
 - "coverage_percent": Số thực từ 0 đến 100, thể hiện tỷ lệ % bám sát.
 - "score": Số thực từ 0 đến 100, điểm số tương ứng.
 - "feedback": Chuỗi văn bản, nhận xét ngắn gọn của bạn.
@@ -353,10 +367,20 @@ BÀI TRÌNH BÀY CỦA THÍ SINH:
                 "feedback": data.get("feedback", ""),
                 "keywords": data.get("keywords", []),
             }
-        return {"score": 50.0, "coverage_percent": 50.0, "feedback": "Lỗi format JSON do bị cắt đứt giữa chừng", "keywords": []}
+        return {
+            "score": 50.0,
+            "coverage_percent": 50.0,
+            "feedback": "Lỗi format JSON do bị cắt đứt giữa chừng",
+            "keywords": [],
+        }
     except Exception as e:
         print(f"❌ AC1 Error: {e}")
-        return {"score": 50.0, "coverage_percent": 50.0, "feedback": f"Lỗi hệ thống: {str(e)}", "keywords": []}
+        return {
+            "score": 50.0,
+            "coverage_percent": 50.0,
+            "feedback": f"Lỗi hệ thống: {str(e)}",
+            "keywords": [],
+        }
 
 
 async def evaluate_ac2(answer_text: str, total_words: int) -> Dict[str, Any]:
@@ -370,10 +394,33 @@ async def evaluate_ac2(answer_text: str, total_words: int) -> Dict[str, Any]:
     actual_total = len(words)
 
     if actual_total < 10:
-        return {"score": 0.0, "has_intro": False, "has_closing": False, "feedback": "Bài trình bày quá ngắn để đánh giá bố cục."}
+        return {
+            "score": 0.0,
+            "has_intro": False,
+            "has_closing": False,
+            "feedback": "Bài trình bày quá ngắn để đánh giá bố cục.",
+        }
 
-    intro_patterns = [r"\bxin chào\b", r"\bkính thưa\b", r"\bem xin\b", r"\btôi xin\b", r"\bbắt đầu\b", r"\bhôm nay\b", r"\bchủ đề\b", r"\bbáo cáo\b"]
-    closing_patterns = [r"\btóm tắt\b", r"\bkết luận\b", r"\bcảm ơn\b", r"\bhết\b", r"\bcâu hỏi\b", r"\bq a\b", r"\bxin phép\b", r"\bkết thúc\b"]
+    intro_patterns = [
+        r"\bxin chào\b",
+        r"\bkính thưa\b",
+        r"\bem xin\b",
+        r"\btôi xin\b",
+        r"\bbắt đầu\b",
+        r"\bhôm nay\b",
+        r"\bchủ đề\b",
+        r"\bbáo cáo\b",
+    ]
+    closing_patterns = [
+        r"\btóm tắt\b",
+        r"\bkết luận\b",
+        r"\bcảm ơn\b",
+        r"\bhết\b",
+        r"\bcâu hỏi\b",
+        r"\bq a\b",
+        r"\bxin phép\b",
+        r"\bkết thúc\b",
+    ]
 
     # Quét trong 30% đầu cho Mở bài và 30% cuối cho Kết bài (tối đa 200 từ để tránh lỗi bài quá dài)
     intro_limit = min(int(actual_total * 0.3), 200)
@@ -392,8 +439,12 @@ async def evaluate_ac2(answer_text: str, total_words: int) -> Dict[str, Any]:
         score -= 20.0
 
     feedback_parts = []
-    feedback_parts.append("Có mở bài rõ ràng" if has_intro else "Thiếu phần chào hỏi/mở bài")
-    feedback_parts.append("Có kết bài/cảm ơn" if has_closing else "Thiếu phần kết luận/cảm ơn")
+    feedback_parts.append(
+        "Có mở bài rõ ràng" if has_intro else "Thiếu phần chào hỏi/mở bài"
+    )
+    feedback_parts.append(
+        "Có kết bài/cảm ơn" if has_closing else "Thiếu phần kết luận/cảm ơn"
+    )
 
     return {
         "score": score,
@@ -405,7 +456,7 @@ async def evaluate_ac2(answer_text: str, total_words: int) -> Dict[str, Any]:
 
 async def evaluate_ac3(questions: Dict) -> Dict[str, Any]:
     """
-    AC3: Đánh giá tổng hợp phần Q&A.
+    AC3: Đánh giá tổng hợp phần Q&A - chấm hết các câu.
     """
     detailed = []
     total_score = 0.0
@@ -417,7 +468,6 @@ async def evaluate_ac3(questions: Dict) -> Dict[str, Any]:
 
         score_result = await evaluate_qa_item(question, answer)
 
-        # Nếu dùng Pydantic model QAItemEvaluation, bạn wrap lại ở đây
         item_eval = {
             "question_id": int(qid),
             "score": score_result["score"],
@@ -484,4 +534,8 @@ CÂU TRẢ LỜI: "{answer}"
         raise ValueError("Không parse được JSON từ AI.")
     except Exception as e:
         print(f"❌ QA Evaluation Error: {e}")
-        return {"score": 50.0, "content_match": 0.0, "feedback": f"Lỗi hệ thống khi đánh giá: {str(e)}"}
+        return {
+            "score": 50.0,
+            "content_match": 0.0,
+            "feedback": f"Lỗi hệ thống khi đánh giá: {str(e)}",
+        }
