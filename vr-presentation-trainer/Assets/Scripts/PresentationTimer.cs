@@ -53,6 +53,7 @@ public class PresentationTimer : MonoBehaviour
     [HideInInspector] public int lastScore = 0;
     [HideInInspector] public float lastDuration = 0f;
     [HideInInspector] public float presentationActualDuration = 0f;
+    private bool isOvertime = false;
 
     void Update()
     {
@@ -65,22 +66,13 @@ public class PresentationTimer : MonoBehaviour
         else
         {
             currentTime -= Time.deltaTime;
+
             if (currentTime <= 0)
             {
-                currentTime = 0;
-                StopTimer();
-
-                // KIỂM TRA XEM ĐANG Ở PHẦN NÀO ĐỂ GỌI ĐÚNG SỰ KIỆN
-                if (currentPhase == SessionPhase.Presentation)
-                {
-                    Debug.Log("[Timer] Đã hết giờ Thuyết Trình!");
-                    onPresentationTimeUp?.Invoke();
-                }
-                else if (currentPhase == SessionPhase.QnA)
-                {
-                    Debug.Log("[Timer] Đã hết giờ Q&A!");
-                    onQnATimeUp?.Invoke();
-                }
+                currentTime = 0f;
+                mode = TimerMode.CountUp;
+                isOvertime = true;
+                Debug.Log("[Timer] Hết giờ — bắt đầu tính thêm giờ!");
             }
         }
 
@@ -109,6 +101,7 @@ public class PresentationTimer : MonoBehaviour
     public void ForceResetTimer()
     {
         isTimerRunning = false;
+        isOvertime = false;
         if (mode == TimerMode.CountDown) currentTime = currentDurationLimit;
         else currentTime = 0f;
 
@@ -153,7 +146,12 @@ public class PresentationTimer : MonoBehaviour
 
     public void CalculatePresentationScore()
     {
-        float actualDuration = (mode == TimerMode.CountUp) ? currentTime : (currentDurationLimit - currentTime);
+        float actualDuration;
+
+        if (isOvertime)
+            actualDuration = currentDurationLimit + currentTime;
+        else
+            actualDuration = currentDurationLimit - currentTime;
 
         lastDuration = actualDuration;
 

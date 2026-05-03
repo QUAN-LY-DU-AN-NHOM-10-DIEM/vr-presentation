@@ -16,20 +16,26 @@ public class SpeechAnalyzer : MonoBehaviour
     public float dbCalibrationOffset = 85f;
 
     [Header("Settings - Silence & Volumes")]
-    public float silenceDbThreshold = 25f;  // Dưới 25dB được coi là đang không nói
-    public float maxSilenceDuration = 2.0f; // Ngừng nói > 2s là tính 1 khoảng lặng
+    // SỬA LẠI: Phải thấp hơn 20 để ngưỡng TooQuiet (20) có thể hoạt động!
+    public float silenceDbThreshold = 15f;
+    public float maxSilenceDuration = 2.0f;
 
     [Header("AC4 - Scoring Thresholds")]
-    public float tooQuietLimit = 20f; // < 20dB
-    public float tooLoudLimit = 75f;  // > 75dB
+    public float tooQuietLimit = 20f; // < 20dB như Jira yêu cầu
+    public float tooLoudLimit = 75f;  // > 75dB như Jira yêu cầu
 
-    [Header("Live Warnings")]
-    public float warningBufferTime = 1.5f; // Phải nói to/nhỏ liên tục 1.5s mới báo động
-    public WarningEvent onLiveWarning;     // Gửi chữ và màu sắc ra ngoài UI
-    public UnityEvent onWarningCleared;    // Tắt cảnh báo khi âm lượng tốt lại
+    [Header("Live Warnings (AC9)")]
+    public float warningBufferTime = 10f;  // THAY ĐỔI: Phải liên tục 10 giây mới báo
+    public float warningCooldownTime = 30f;// THÊM MỚI: AC9-4 (Cooldown 30 giây)
+    public WarningEvent onLiveWarning;
+    public UnityEvent onWarningCleared;
 
     private float badVolumeTimer = 0f;
     private string currentWarningState = "Good";
+
+    // BIẾN QUẢN LÝ COOLDOWN
+    private bool isCooldownActive = false;
+    private float currentCooldownTimer = 0f;
 
     // --- State Tracking ---
     private bool isAnalyzing = false;
@@ -60,9 +66,18 @@ public class SpeechAnalyzer : MonoBehaviour
 
     private void Update()
     {
+        // 1. CHẠY BỘ ĐẾM COOLDOWN NGẦM
+        if (isCooldownActive)
+        {
+            currentCooldownTimer -= Time.deltaTime;
+            if (currentCooldownTimer <= 0)
+            {
+                isCooldownActive = false;
+            }
+        }
+
         if (!isAnalyzing || activeClip == null) return;
 
-        // Bộ đếm nhịp: Chỉ chạy hàm phân tích mỗi 0.1 giây để tiết kiệm CPU
         analyzeTimer += Time.deltaTime;
         if (analyzeTimer >= analyzeInterval)
         {
@@ -83,8 +98,6 @@ public class SpeechAnalyzer : MonoBehaviour
         currentSilenceTimer = 0f; totalPauseCount = 0;
         totalVolumeSum = 0f; volumeSampleCount = 0;
         finalVolumeScore = 100;
-
-        Debug.Log("🎙️ [Speech Analyzer] Bắt đầu phân tích giọng nói ngầm...");
     }
 
     // GỌI HÀM NÀY KHI DỪNG RECORD -> NÓ SẼ TRẢ VỀ BÁO CÁO!
@@ -133,12 +146,12 @@ public class SpeechAnalyzer : MonoBehaviour
         // 4. LIVE WARNING LOGIC (THÊM PHẦN NÀY VÀO TRƯỚC PHẦN KHOẢNG LẶNG)
         if (dbValue > tooLoudLimit)
         {
-            HandleLiveWarning("TooLoud", "Bạn đang nói quá TO!", Color.red);
+            HandleLiveWarning("TooLoud", "Bạn đang nói quá TO!", Color.white);
         }
         else if (dbValue < tooQuietLimit && dbValue > silenceDbThreshold)
         {
             // Lưu ý: Chỉ báo "Too Quiet" nếu họ ĐANG NÓI (lớn hơn ngưỡng im lặng)
-            HandleLiveWarning("TooQuiet", "Bạn đang nói quá NHỎ!", new Color32(100, 200, 255, 255)); // Màu xanh dương
+            HandleLiveWarning("TooQuiet", "Bạn đang nói quá NHỎ!", Color.white);
         }
         else if (dbValue >= tooQuietLimit && dbValue <= tooLoudLimit)
         {
@@ -241,19 +254,24 @@ public class SpeechAnalyzer : MonoBehaviour
 
     private void HandleLiveWarning(string stateName, string message, Color warningColor)
     {
+        // AC9-4: NẾU ĐANG TRONG THỜI GIAN COOLDOWN 30S -> KHÔNG LÀM GÌ CẢ
+        if (isCooldownActive) return;
+
         if (currentWarningState == stateName)
         {
-            // Tích lũy thời gian nếu họ tiếp tục nói sai
             badVolumeTimer += analyzeInterval;
-            if (badVolumeTimer >= warningBufferTime)
+            if (badVolumeTimer >= warningBufferTime) // Đủ 10 giây
             {
                 onLiveWarning?.Invoke(message, warningColor);
-                badVolumeTimer = 0f; // Reset để không spam event liên tục
+                badVolumeTimer = 0f;
+
+                // KÍCH HOẠT COOLDOWN 30 GIÂY NGAY KHI VỪA BÁO CẢNH BÁO
+                isCooldownActive = true;
+                currentCooldownTimer = warningCooldownTime;
             }
         }
         else
         {
-            // Vừa mới đổi trạng thái (Từ Good sang TooLoud chẳng hạn)
             currentWarningState = stateName;
             badVolumeTimer = 0f;
         }
