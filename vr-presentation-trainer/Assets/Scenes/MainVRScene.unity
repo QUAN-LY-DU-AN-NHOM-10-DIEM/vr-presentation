@@ -9504,11 +9504,11 @@ MonoBehaviour:
   normalNPCGroup: {fileID: 546941257}
   defenseNPCGroup: {fileID: 1949034327}
   liveAdviceTextUInormal: {fileID: 1936856837}
-  liveAdviceCanvasNormal: {fileID: 0}
+  liveAdviceCanvasNormal: {fileID: 512847911}
   liveAdviceTextUIdefense: {fileID: 505177692}
-  liveAdviceCanvasDefense: {fileID: 0}
+  liveAdviceCanvasDefense: {fileID: 520271805}
   presentationTimer: {fileID: 1108964647}
-  timePicker: {fileID: 0}
+  timePicker: {fileID: 903566367}
 --- !u!1 &406919726
 GameObject:
   m_ObjectHideFlags: 0
@@ -10882,6 +10882,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 266494840140728669, guid: 46456dae3dda32145b287bfd5c839eb4, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2082623721}
+    - targetCorrespondingSourceObject: {fileID: 266494840140728669, guid: 46456dae3dda32145b287bfd5c839eb4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 520271806}
     - targetCorrespondingSourceObject: {fileID: 6727308724127541365, guid: 46456dae3dda32145b287bfd5c839eb4, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1870776159}
@@ -11462,17 +11465,17 @@ RectTransform:
   m_GameObject: {fileID: 520271805}
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 2}
-  m_LocalScale: {x: 0.099999994, y: 0.099999994, z: 0.099999994}
+  m_LocalScale: {x: 0.1, y: 0.099999994, z: 0.1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 505177694}
   - {fileID: 1946867345}
   - {fileID: 27473645}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1949034327}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 1, y: 2}
+  m_AnchoredPosition: {x: 1, y: 0.4000001}
   m_SizeDelta: {x: 500, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &520271807
@@ -22960,7 +22963,7 @@ MonoBehaviour:
   loadingPanel: {fileID: 1307606374}
   analyzeButton: {fileID: 1704750881}
   loadingText: {fileID: 1369025639}
-  backendUrl: https://d8ce-2001-ee0-d749-5780-4da3-3cb0-91f0-744e.ngrok-free.app/api/v1/upload-context
+  backendUrl: https://1bc5-1-54-120-207.ngrok-free.app/api/v1/upload-context
   selectedPdfPath: 
 --- !u!114 &1108964647
 MonoBehaviour:
@@ -25685,11 +25688,11 @@ MonoBehaviour:
   sampleWindow: 512
   analyzeInterval: 0.1
   dbCalibrationOffset: 85
-  silenceDbThreshold: 15
+  silenceDbThreshold: 5
   maxSilenceDuration: 2
-  tooQuietLimit: 20
-  tooLoudLimit: 75
-  warningBufferTime: 10
+  tooQuietLimit: 40
+  tooLoudLimit: 60
+  warningBufferTime: 5
   warningCooldownTime: 30
   onLiveWarning:
     m_PersistentCalls:
@@ -32741,7 +32744,7 @@ MonoBehaviour:
   modeManager: {fileID: 2118384658}
   pdf1: {fileID: 439457283}
   pdf2: {fileID: 119654530}
-  reportPdfViewer: {fileID: 0}
+  reportPdfViewer: {fileID: 2049847329}
   menuButtonInput: {fileID: 3255699453802992142, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   micOnImage: {fileID: 2088628083}
   micOffImage: {fileID: 2017053361}
@@ -32758,8 +32761,8 @@ MonoBehaviour:
   hardwareMicName: 
   gazeTracker: {fileID: 1018752937}
   presentationTimer: {fileID: 1108964647}
-  timePicker: {fileID: 0}
-  backendBaseUrl: https://d8ce-2001-ee0-d749-5780-4da3-3cb0-91f0-744e.ngrok-free.app/api/v1
+  timePicker: {fileID: 903566367}
+  backendBaseUrl: https://1bc5-1-54-120-207.ngrok-free.app/api/v1
   mode: practice
 --- !u!1 &1601608699
 GameObject:
@@ -34321,6 +34324,18 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 147403525}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1170552976}
         m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
         m_MethodName: SetActive
         m_Mode: 6
@@ -41553,6 +41568,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PageChangeListener
   nextSlideInput: {fileID: -1445923187611823353, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   previousSlideInput: {fileID: 25491920987804301, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+--- !u!114 &2049847329 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7968120448156587179, guid: 680df940a2e1ef04d93123533479fad1, type: 3}
+  m_PrefabInstance: {fileID: 2049847325}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2049847327}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40070f6a54d22da418724b87b7444a1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnityPdfViewer.PdfViewerUI
 --- !u!4 &2050985460 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2011067962421910853, guid: 548017cf7bf6ffe46a9d2245d905b927, type: 3}
@@ -43470,7 +43496,6 @@ SceneRoots:
   - {fileID: 1587516855}
   - {fileID: 546941256}
   - {fileID: 502486462}
-  - {fileID: 520271806}
   - {fileID: 1497462920}
   - {fileID: 147403524}
   - {fileID: 1129828917}

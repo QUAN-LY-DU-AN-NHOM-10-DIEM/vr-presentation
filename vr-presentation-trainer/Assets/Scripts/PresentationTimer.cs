@@ -101,6 +101,7 @@ public class PresentationTimer : MonoBehaviour
     public void ForceResetTimer()
     {
         isTimerRunning = false;
+        isOvertime = false;
         if (mode == TimerMode.CountDown) currentTime = currentDurationLimit;
         else currentTime = 0f;
 

@@ -146,12 +146,12 @@ public class SpeechAnalyzer : MonoBehaviour
         // 4. LIVE WARNING LOGIC (THÊM PHẦN NÀY VÀO TRƯỚC PHẦN KHOẢNG LẶNG)
         if (dbValue > tooLoudLimit)
         {
-            HandleLiveWarning("TooLoud", "Bạn đang nói quá TO!", Color.red);
+            HandleLiveWarning("TooLoud", "Bạn đang nói quá TO!", Color.white);
         }
         else if (dbValue < tooQuietLimit && dbValue > silenceDbThreshold)
         {
             // Lưu ý: Chỉ báo "Too Quiet" nếu họ ĐANG NÓI (lớn hơn ngưỡng im lặng)
-            HandleLiveWarning("TooQuiet", "Bạn đang nói quá NHỎ!", new Color32(100, 200, 255, 255)); // Màu xanh dương
+            HandleLiveWarning("TooQuiet", "Bạn đang nói quá NHỎ!", Color.white);
         }
         else if (dbValue >= tooQuietLimit && dbValue <= tooLoudLimit)
         {
