@@ -1,46 +1,84 @@
 using Assets.CustomPdfViewer.Scripts;
+using TMPro;
 using UnityEngine;
+
+/// <summary>
+/// Quản lý việc dịch chuyển người chơi giữa các phòng (Lobby, Normal, Defense).
+/// Khởi tạo môi trường tương ứng cho từng phòng thuyết trình.
+/// </summary>
 public class PositionChanger : MonoBehaviour
 {
-    public GameModeManager GameModeManager;
+    [Header("Người chơi & UI")]
+    public GameObject player;
+    public GameObject pauseMenu;
+    public GameModeManager gameModeManager;
     public ModeManager modeManager;
+    public PauseMenuManager pauseManager;
+
+    [Header("Phòng Thuyết trình")]
+    public Transform normalRoom;
+    public Transform defenseRoom;
+    public Transform normalNPCGroup;
+    public Transform defenseNPCGroup;
+
+    [Header("PDF Viewers")]
     public CustomPdfViewerUI pdfViewer1;
     public CustomPdfViewerUI pdfViewer2;
 
-    public Transform normalRoom;
-    public Transform defenseRoom;
+    // Không còn dùng bảng phụ, chuyển sang dùng VRWarningHUD.Instance.ShowWarning()
 
+    public void Start()
+    {
+        // Ẩn Menu khi mới vào
+        if (pauseMenu != null) pauseMenu.SetActive(false);
+        
+        // Xin quyền Micro trên Android
+#if UNITY_ANDROID
+        if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone))
+        {
+            UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone);
+        }
+#endif
+    }
+
+    /// <summary>
+    /// Dịch chuyển người chơi vào phòng thuyết trình đã chọn và bắt đầu phiên làm việc.
+    /// </summary>
     public void GoToMainRoom()
     {
-        Debug.Log("Đang dịch chuyển VRPlayer vào phòng chính...");
+        if (player == null) return;
 
-        // Tìm object có tên chính xác là "VRPlayer"
-        GameObject player = GameObject.Find("VR Player");
+        bool isNormal = (modeManager.selectedMode == "Normal");
+        Transform targetRoom = isNormal ? normalRoom : defenseRoom;
+        CustomPdfViewerUI activePdf = isNormal ? pdfViewer2 : pdfViewer1;
+        Transform activeNPCs = isNormal ? normalNPCGroup : defenseNPCGroup;
 
-        if (player != null)
+        // 1. Dịch chuyển và xoay người chơi
+        player.transform.position = targetRoom.position;
+        player.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+
+        // 2. Setup PDF
+        if (activePdf != null)
         {
-            if (modeManager.selectedMode == "Normal")
-            {
-                pdfViewer2.gameObject.SetActive(true);
-                pdfViewer2.LoadPDF(GameModeManager.selectedPdfPath, true);
-                // Dịch chuyển tức thời đến tọa độ x=-3.5, y=-1, z=2
-                player.transform.position = normalRoom.position;
-            }
-            else
-            {
-                pdfViewer1.gameObject.SetActive(true);
-                pdfViewer1.LoadPDF(GameModeManager.selectedPdfPath,true);
-                // Dịch chuyển tức thời đến tọa độ x=-3.5, y=-1, z=2
-                player.transform.position = defenseRoom.position;
-            }
+            activePdf.gameObject.SetActive(true);
+            // activePdf.LoadPDF(gameModeManager.selectedPdfPath, true); // Uncomment khi có biến path chuẩn
+        }
 
-            player.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // Quay mặt về phía bảng trình chiếu
-            Debug.Log("Dịch chuyển thành công!");
-        }
-        else
+        // 3. Setup Gaze Tracker
+        var gazeTracker = GameController.Instance.gazeTracker;
+        if (gazeTracker != null)
         {
-            // Báo lỗi đỏ chót dưới Console nếu gõ sai tên
-            Debug.LogError("❌ Không tìm thấy object nào tên là VRPlayer cả! Bạn check lại tên bên Hierarchy nha.");
+            gazeTracker.activeRoomParent = activeNPCs;
+            gazeTracker.currentRoomType = isNormal ? GazeTrackingManager.RoomType.NormalClass : GazeTrackingManager.RoomType.DefenseRoom;
+            
+            // QUAN TRỌNG: Phải gọi hàm này để script quét danh sách NPC và bắt đầu tính thời gian!
+            gazeTracker.StartTracking(activeNPCs, isNormal ? GazeTrackingManager.RoomType.NormalClass : GazeTrackingManager.RoomType.DefenseRoom);
         }
+
+        // 4. Bật Menu và kích hoạt GameController
+        if (pauseMenu != null) pauseMenu.SetActive(true);
+        GameController.Instance.StartPresentation();
+
+        Debug.Log($"✅ Đã vào phòng {(isNormal ? "Normal" : "Defense")} và bắt đầu thuyết trình.");
     }
 }

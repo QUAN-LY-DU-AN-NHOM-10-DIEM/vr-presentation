@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from app.routers import topics
+
+from app.routers import topics, evaluate
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="VR Presentation Trainer API")
@@ -14,6 +15,7 @@ app.add_middleware(
 
 # Đăng ký router
 app.include_router(topics.router, prefix="/api/v1", tags=["Context Upload"])
+app.include_router(evaluate.router, prefix="/api/v1", tags=["Evaluate Speech"])
 
 # Root check
 @app.get("/")
