@@ -479,12 +479,9 @@ public class PauseMenuManager : MonoBehaviour
 
                 // Lưu file PDF
                 string pdfPath = SaveEvaluationPdfToFile(sessionId, pdfData);
-
-                // Load PDF lên UI
-                if (reportPdfViewer != null && !string.IsNullOrEmpty(pdfPath))
-                {
-                    reportPdfViewer.LoadPDF(pdfPath, true);
-                }
+                
+                // Load PDF lên UI sau một khoảng delay ngắn để hệ thống file Android kịp cập nhật
+                StartCoroutine(LoadPdfDelayed(pdfPath));
 
                 // if (QuestionDialogManager.Instance != null) QuestionDialogManager.Instance.HideDialog();
 
@@ -496,6 +493,17 @@ public class PauseMenuManager : MonoBehaviour
                 Debug.LogError($"❌ Lỗi chấm điểm: {request.error}\nChi tiết: {request.downloadHandler.text}");
                 if (QuestionDialogManager.Instance != null) QuestionDialogManager.Instance.ShowErrorState("Server AI báo lỗi khi chấm điểm!");
             }
+        }
+    }
+
+    private IEnumerator LoadPdfDelayed(string pdfPath)
+    {
+        // Chờ 1.5 giây cho chắc chắn file đã được ghi xong hoàn toàn trên Android
+        yield return new WaitForSeconds(1.5f);
+
+        if (reportPdfViewer != null && !string.IsNullOrEmpty(pdfPath))
+        {
+            reportPdfViewer.LoadPDF(pdfPath, true);
         }
     }
 
