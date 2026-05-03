@@ -620,9 +620,7 @@ public class PauseMenuManager : MonoBehaviour
 
     public void StartReportPhase()
     {
-        titleText.text = "General Report";
-        titleBackground.color = new Color(0f, 0f, 0f, 0f);
-
+        titleText.text = "General Report Phase";
         presentationTimer.CalculatePresentationScore();
     }
 
