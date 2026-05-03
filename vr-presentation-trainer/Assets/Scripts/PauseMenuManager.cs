@@ -327,8 +327,14 @@ public class PauseMenuManager : MonoBehaviour
 
     public void EndQaAPhase()
     {
-        Debug.LogError("Nộp bài");
-        if (isUploading) return;
+        Debug.Log("--- BẮT ĐẦU NỘP BÀI (EndQaAPhase) ---");
+        
+        if (isUploading) 
+        {
+            Debug.LogWarning("⚠️ Hệ thống đang trong quá trình nộp bài, vui lòng không bấm liên tục!");
+            return;
+        }
+        
         isUploading = true;
 
         // --- DỪNG MỌI HOẠT ĐỘNG PHÂN TÍCH ---
@@ -344,6 +350,8 @@ public class PauseMenuManager : MonoBehaviour
         }
 
         string sessionId = SessionManager.SessionId;
+        Debug.Log($"[Submit] Session ID: '{sessionId}'");
+
         if (string.IsNullOrEmpty(sessionId))
         {
             Debug.LogError("❌ Chưa có session_id để nộp bài!");
