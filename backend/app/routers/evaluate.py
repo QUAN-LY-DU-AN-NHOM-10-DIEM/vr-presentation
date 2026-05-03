@@ -1,6 +1,7 @@
 from typing import List
 import io
 from datetime import datetime
+from collections import defaultdict
 
 from fastapi import APIRouter, UploadFile, File, Query, Request
 from fastapi.responses import StreamingResponse
@@ -241,27 +242,125 @@ def generate_pdf_report(
     c.setFont(font_bold, 32)
     c.drawCentredString(page_width / 2, page_height - 3 * cm, "CHI TIẾT ĐÁNH GIÁ MẮT")
 
-    c.setFont(font_bold, 24)
-    y_pos = page_height - 6 * cm
+    # Group zones by target name
     zone_labels = (
         request.eye_contact_zone_names
         if request.eye_contact_zone_names
         else ["Trái trước", "Phải trước", "Trái sau", "Phải sau"]
     )
-    for label, pct in zip(zone_labels, request.eye_contact_zones):
-        c.setFont(font_name, 20)
-        c.drawString(3 * cm, y_pos, f"{label}: {pct:.1f}%")
-        # Thanh ngang
-        c.setFillColor(colors.HexColor("#E0E0E0"))
-        c.rect(10 * cm, y_pos - 6, 8 * cm, 14, fill=True, stroke=False)
-        c.setFillColor(colors.HexColor("#4CAF50"))
-        bar_width = (pct / 100) * 8 * cm
-        c.rect(10 * cm, y_pos - 6, bar_width, 14, fill=True, stroke=False)
-        c.setFillColor(colors.black)
-        y_pos -= 1.5 * cm
+    zones = request.eye_contact_zones
 
-    c.setFont(font_bold, 18)
-    c.drawString(2 * cm, y_pos - 0.5 * cm, request.eye_contact_advice)
+    # Group by target - extract target name
+    target_groups = defaultdict(list)
+    for label, pct in zip(zone_labels, zones):
+        if " - " in label:
+            parts = label.split(" - ")
+            target_name = parts[0].strip()
+            zone_name = parts[1].strip() if len(parts) > 1 else label
+        else:
+            target_name = label
+            zone_name = label
+        target_groups[target_name].append((zone_name, pct))
+
+    # Colors for different targets
+    target_colors = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0", "#F44336"]
+
+    # Layout settings
+    margin_left = 2 * cm
+    card_width = page_width - 4 * cm
+    y_pos = page_height - 6 * cm
+    card_padding = 0.5 * cm
+    zone_height = 1 * cm
+    header_height = 0.8 * cm
+    gap_between_cards = 1 * cm
+
+    for idx, (target_name, zone_list) in enumerate(target_groups.items()):
+        color = colors.HexColor(target_colors[idx % len(target_colors)])
+
+        # Calculate card height
+        card_height = header_height + len(zone_list) * zone_height + 2 * card_padding
+
+        # Check if need new page
+        if y_pos - card_height < 3 * cm:
+            c.showPage()
+            y_pos = page_height - 3 * cm
+
+        # Draw card background with light color
+        c.setFillColor(colors.HexColor("#F5F5F5"))
+        c.setStrokeColor(color)
+        c.setLineWidth(1.5)
+        c.rect(
+            margin_left,
+            y_pos - card_height,
+            card_width,
+            card_height,
+            stroke=True,
+            fill=True,
+        )
+
+        # Draw target header
+        c.setFillColor(color)
+        c.rect(
+            margin_left,
+            y_pos - header_height,
+            card_width,
+            header_height,
+            fill=True,
+            stroke=False,
+        )
+        c.setFillColor(colors.white)
+        c.setFont(font_bold, 18)
+        c.drawString(
+            margin_left + 0.3 * cm, y_pos - header_height + 0.25 * cm, f"{target_name}"
+        )
+        c.setFillColor(colors.black)
+        y_pos -= header_height + card_padding
+
+        # Draw zones
+        bar_width_max = card_width - 8 * cm
+        for zone_name, pct in zone_list:
+            c.setFont(font_name, 16)
+            c.drawString(margin_left + 0.5 * cm, y_pos, f"{zone_name}")
+
+            # Percentage on right
+            c.drawRightString(margin_left + 7.5 * cm, y_pos, f"{pct:.1f}%")
+
+            # Progress bar
+            bar_x = margin_left + 8 * cm
+            c.setFillColor(colors.HexColor("#E0E0E0"))
+            c.rect(bar_x, y_pos - 4, bar_width_max, 10, fill=True, stroke=False)
+            c.setFillColor(color)
+            bar_width = (pct / 100) * bar_width_max
+            c.rect(bar_x, y_pos - 4, bar_width, 10, fill=True, stroke=False)
+            c.setFillColor(colors.black)
+
+            y_pos -= zone_height
+
+        y_pos -= card_padding + gap_between_cards
+
+    # Draw advice at bottom
+    y_pos -= 0.5 * cm
+    if y_pos < 3 * cm:
+        c.showPage()
+        y_pos = page_height - 3 * cm
+
+    c.setFont(font_bold, 16)
+    # Word wrap the advice text
+    advice_text = request.eye_contact_advice
+    text_obj = c.beginText(margin_left, y_pos)
+    text_obj.setFont(font_name, 14)
+    text_obj.setLeading(18)
+    words = advice_text.split()
+    line = ""
+    for word in words:
+        if len(line + " " + word) * 8 < card_width:
+            line = line + " " + word if line else word
+        else:
+            text_obj.textLine(line)
+            line = word
+    if line:
+        text_obj.textLine(line)
+    c.drawText(text_obj)
 
     # ========== TRANG 3: CHI TIẾT ĐÁNH GIÁ NỘI DUNG ==========
     c.showPage()
