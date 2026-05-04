@@ -364,4 +364,13 @@ public class PauseMenuManager : MonoBehaviour
             vrPlayer.transform.rotation = lobbySpawnPoint.rotation;
         }
     }
+
+    public void ExitGame()
+    {
+        Debug.Log("Thoát Game!");
+        Application.Quit();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
+    }
 }
